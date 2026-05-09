@@ -1,0 +1,105 @@
+.header {
+  border-bottom: 1px solid #eee;
+
+  &__container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing $spacing * 2;
+    background: #F9E2E7;
+  }
+
+  &__logo {
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+
+  &__nav {
+    .nav__list {
+      display: flex;
+      list-style: none;
+      gap: 20px;
+    }
+  }
+
+  &__actions {
+
+    .btn-cart {
+      display: flex; // 🔥 CLAVE
+      align-items: center;
+      gap: 6px;
+
+      border: 1px solid $color-black;
+      background: white;
+      padding: 6px 10px;
+      cursor: pointer;
+
+      font-size: 12px;
+      border-radius: 20px;
+
+      transition: all 0.25s ease;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      span {
+        font-weight: 500;
+      }
+
+      &:hover {
+        background: $color-black;
+        color: $color-white;
+      }
+    }
+  }
+}
+
+/* 🔥 FIX MOBILE */
+@media (max-width: 768px) {
+
+  .header__container {
+    padding: 10px 15px;
+  }
+
+  .header__logo {
+    font-size: 12px;
+    max-width: 90px;
+    line-height: 1.2;
+  }
+
+  .header__nav {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav__list {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .nav__list li {
+    flex-shrink: 0;
+  }
+
+  .header__actions {
+    min-width: 60px;
+    display: flex;
+    justify-content: flex-end;
+
+    .btn-cart {
+      font-size: 11px;
+      padding: 4px 8px;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+}

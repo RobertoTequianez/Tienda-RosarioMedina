@@ -1,0 +1,71 @@
+/* 🔥 PANEL */
+.cart-panel {
+  position: fixed;
+  right: -100%;
+  top: 0;
+  width: 320px;
+  height: 100vh;
+  background: white;
+  box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+  transition: right 0.3s ease;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  &.active {
+    right: 0;
+  }
+
+  /* 🔥 HEADER */
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+  }
+
+  /* 🔥 ITEMS (SCROLL REAL) */
+  &__items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+
+    padding-bottom: 80px; // 🔥 espacio para el total
+  }
+}
+
+/* 🔥 ITEM */
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+
+  button {
+    margin: 0 3px;
+    cursor: pointer;
+  }
+}
+
+/* 🔥 TOTAL */
+.cart-total {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  background: white;
+
+  position: sticky;
+  bottom: 0;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  box-shadow: 0 -6px 12px rgba(0,0,0,0.06);
+
+  z-index: 2;
+}

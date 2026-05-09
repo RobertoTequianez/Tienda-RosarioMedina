@@ -1,0 +1,19 @@
+.btn-primary {
+  background: $color-black;
+  color: $color-white;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+}
+
+.whatsapp-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+}
