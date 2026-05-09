@@ -1,5 +1,11 @@
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
+/* 🔥 CONFIG ENVÍO */
+const CONFIG_ENVIO = {
+    costo: 150,
+    gratisDesde: 2000,
+};
+
 function guardarCarrito() {
     localStorage.setItem("carrito", JSON.stringify(carrito));
 }
@@ -12,9 +18,24 @@ function actualizarContador() {
     contador.textContent = total;
 }
 
-/* 🔥 CALCULAR TOTAL */
+/* 🔥 CALCULAR TOTAL PRODUCTOS */
 function calcularTotal() {
-    return carrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
+    return carrito.reduce((acc, p) => acc + (Number(p.precio) * p.cantidad), 0);
+}
+
+/* 🔥 CALCULAR ENVÍO */
+function calcularEnvio(totalProductos) {
+    if (totalProductos >= CONFIG_ENVIO.gratisDesde) {
+        return 0;
+    }
+    return CONFIG_ENVIO.costo;
+}
+
+/* 🔥 TOTAL FINAL */
+function calcularTotalFinal() {
+    const total = calcularTotal();
+    const envio = calcularEnvio(total);
+    return total + envio;
 }
 
 /* 🔥 AGREGAR PRODUCTO */
@@ -45,13 +66,20 @@ function renderCarrito() {
         const item = document.createElement("div");
         item.classList.add("cart-item");
 
+        const subtotal = Number(prod.precio) * prod.cantidad;
+
         item.innerHTML = `
-            <div>
-                <strong>${prod.nombre}</strong>
-                <p>$${prod.precio}</p>
+            <div class="cart-item__info">
+                <img src="${prod.imagen}" alt="${prod.nombre}" />
+
+                <div class="cart-item__text">
+                    <strong>${prod.nombre}</strong>
+                    <p class="cart-price">$${prod.precio}</p>
+                    <p class="cart-subtotal">$${subtotal}</p>
+                </div>
             </div>
 
-            <div>
+            <div class="cart-item__controls">
                 <button onclick="restar(${prod.id})">-</button>
                 <span>${prod.cantidad}</span>
                 <button onclick="sumar(${prod.id})">+</button>
@@ -62,9 +90,30 @@ function renderCarrito() {
         contenedor.appendChild(item);
     });
 
-    /* 🔥 ACTUALIZAR TOTAL */
+    /* 🔥 TOTALES */
     if (totalContainer) {
-        totalContainer.textContent = calcularTotal();
+        const total = calcularTotal();
+        const envio = calcularEnvio(total);
+        const totalFinal = calcularTotalFinal();
+
+        totalContainer.innerHTML = `
+            <div>
+                <span>Productos:</span>
+                <strong>$${total}</strong>
+            </div>
+
+            <div>
+                <span>Envío:</span>
+                <strong>${envio === 0 ? "GRATIS" : "$" + envio}</strong>
+            </div>
+
+            <hr/>
+
+            <div>
+                <span>Total:</span>
+                <strong>$${totalFinal}</strong>
+            </div>
+        `;
     }
 }
 
@@ -100,3 +149,9 @@ function eliminar(id) {
     renderCarrito();
     actualizarContador();
 }
+
+/* 🔥 INICIALIZAR */
+document.addEventListener("DOMContentLoaded", () => {
+    actualizarContador();
+    renderCarrito();
+});

@@ -346,15 +346,72 @@ body {
 .cart-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-.cart-item button {
-  margin: 0 3px;
-  cursor: pointer;
+  align-items: flex-start;
+  margin-bottom: 18px;
 }
 
-/* 🔥 TOTAL */
+/* 🔥 INFO (imagen + texto) */
+.cart-item__info {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: 65%;
+}
+
+/* 🔥 IMAGEN */
+.cart-item__info img {
+  width: 55px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* 🔥 TEXTO */
+.cart-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cart-item__text strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+/* 🔥 PRECIO BASE */
+.cart-price {
+  font-size: 12px;
+  color: #888;
+}
+
+/* 🔥 SUBTOTAL */
+.cart-subtotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+}
+
+/* 🔥 CONTROLES (+ - 🗑) */
+.cart-item__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 🔥 BOTONES */
+.cart-item button {
+  cursor: pointer;
+  padding: 4px 7px;
+  border: 1px solid #ccc;
+  background: white;
+}
+
+/* 🔥 CANTIDAD */
+.cart-item__controls span {
+  min-width: 22px;
+  text-align: center;
+}
+
+/* 🔥 TOTAL FIJO ABAJO */
 .cart-total {
   padding: 15px 20px;
   border-top: 1px solid #eee;
@@ -367,7 +424,6 @@ body {
   font-size: 16px;
   font-weight: 600;
   box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.06);
-  z-index: 2;
 }
 
 /*# sourceMappingURL=styles.css.map */
