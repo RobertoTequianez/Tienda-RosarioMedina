@@ -83,13 +83,19 @@ const productos = [
     imagen: "assets/videos/images/producto2.jpg"
   },
   {
-    id: 8,
-    nombre: "Mochila Urbana",
-    variante: "Verde",
-    precio: 999,
-    categoria: "mochilas",
-    imagen: "assets/videos/images/producto1.jpg"
-  },
+  id: 8,
+  nombre: "Mochila TEQUI",
+  variante: "Verde",
+  precio: 999,
+  categoria: "mochilas",
+  imagen: "assets/videos/images/producto1.jpg", // portada
+
+  imagenes: [
+    "assets/videos/images/producto1.jpg",
+    "assets/videos/images/producto3.png",
+    "assets/videos/images/producto4.jpg"
+  ]
+},
   {
     id: 9,
     nombre: "Mochila Urbana",

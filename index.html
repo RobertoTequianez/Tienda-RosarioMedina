@@ -65,9 +65,6 @@
         <p>Descubre lo último en tendencia</p>
         <button class="btn-primary">Comprar ahora</button>
     </div>
-<!-- 🎥  SI NO ENCUENTRA EL VIDEO VE AL CSS DE HERO -->
-
-
 
 </section>
 
@@ -116,6 +113,40 @@
 <footer class="footer">
     <p>© 2026 Tienda Rosario</p>
 </footer>
+
+<!-- 🔥 MODAL PRODUCTO (MEJORADO) -->
+<div id="product-modal" class="modal">
+  <div class="modal__content">
+
+    <!-- 🔥 BOTÓN CERRAR -->
+    <button id="close-modal" class="modal__close">&times;</button>
+
+    <div class="modal__body">
+
+      <!-- 🔥 IMAGEN CONTROLADA -->
+      <div class="modal__image">
+          <!-- 🔥 FLECHA IZQUIERDA -->
+       <button class="modal__arrow modal__arrow--left">&#10094;</button>
+        <img id="modal-image" src="" alt="producto">
+         <!-- 🔥 FLECHA DERECHA -->
+       <button class="modal__arrow modal__arrow--right">&#10095;</button>
+      </div>
+
+      <!-- 🔥 INFO -->
+      <div class="modal__info">
+        <h2 id="modal-title" class="modal__title"></h2>
+        <p id="modal-price" class="modal__price"></p>
+        <p id="modal-description" class="modal__description"></p>
+
+        <!-- 🔥 NUEVO BOTÓN -->
+        <button class="product-card__btn" id="modal-add">
+          AGREGAR
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- 🔥 JS -->
 <script src="data/productos.js"></script>
