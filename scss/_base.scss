@@ -3,7 +3,7 @@
 *::after {
   box-sizing: border-box;
 
-  /* 🔥 FIX MOBILE GLOBAL (tap highlight) */
+  /*  FIX MOBILE GLOBAL (tap highlight) */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -11,16 +11,24 @@ html {
   margin: 0;
   padding: 0;
 
-  /* 🔥 evita scroll lateral fantasma */
+  /*  evita scroll lateral fantasma */
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
   padding: 0;
+  padding-top: 60px; // 🔥 compensa header fixed
 
   font-family: 'Helvetica Neue', sans-serif;
 
-  /* 🔥 refuerza el fix */
+  /*  refuerza el fix */
   overflow-x: hidden;
+}
+
+/* 🔥 FIX MOBILE */
+@media (max-width: 768px) {
+  body {
+    padding-top: 40px; // 🔥 ajusta para mobile
+  }
 }

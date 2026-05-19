@@ -3,26 +3,38 @@
 *::before,
 *::after {
   box-sizing: border-box;
-  /* 🔥 FIX MOBILE GLOBAL (tap highlight) */
+  /*  FIX MOBILE GLOBAL (tap highlight) */
   -webkit-tap-highlight-color: transparent;
 }
 
 html {
   margin: 0;
   padding: 0;
-  /* 🔥 evita scroll lateral fantasma */
+  /*  evita scroll lateral fantasma */
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
   padding: 0;
+  padding-top: 60px;
   font-family: "Helvetica Neue", sans-serif;
-  /* 🔥 refuerza el fix */
+  /*  refuerza el fix */
   overflow-x: hidden;
 }
 
+/* 🔥 FIX MOBILE */
+@media (max-width: 768px) {
+  body {
+    padding-top: 40px;
+  }
+}
 .header {
+  position: fixed;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background: #F9E2E7;
   border-bottom: 1px solid #eee;
 }
 .header__container {
@@ -30,7 +42,6 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
-  background: #F9E2E7;
 }
 .header__logo {
   font-weight: bold;
@@ -159,7 +170,7 @@ body {
   gap: 30px;
 }
 
-/* 🔥 FILTROS (PC = igual, MOBILE mejora) */
+/*  FILTROS (PC = igual, MOBILE mejora) */
 .products__filters {
   display: flex;
   gap: 10px;
@@ -198,7 +209,7 @@ body {
   display: none;
 }
 
-/* 🔥 CARD PREMIUM */
+/*  CARD PREMIUM */
 .product-card {
   cursor: pointer;
   transition: transform 0.3s ease;
@@ -274,7 +285,7 @@ body {
   .product-card__image img {
     height: 200px;
   }
-  /* 🔥 MEJORA REAL DE FILTROS EN MOBILE */
+  /*  MEJORA REAL DE FILTROS EN MOBILE */
   .products__filters {
     padding: 10px 15px;
     gap: 8px;
@@ -305,7 +316,7 @@ body {
   cursor: pointer;
 }
 
-/* 🔥 PANEL */
+/*  PANEL */
 .cart-panel {
   position: fixed;
   right: -100%;
@@ -323,7 +334,7 @@ body {
   right: 0;
 }
 .cart-panel {
-  /* 🔥 HEADER */
+  /*  HEADER */
 }
 .cart-panel__header {
   display: flex;
@@ -333,7 +344,7 @@ body {
   border-bottom: 1px solid #eee;
 }
 .cart-panel {
-  /* 🔥 ITEMS (SCROLL REAL) */
+  /*  ITEMS (SCROLL REAL) */
 }
 .cart-panel__items {
   flex: 1;
@@ -342,7 +353,7 @@ body {
   padding-bottom: 80px;
 }
 
-/* 🔥 ITEM */
+/*  ITEM */
 .cart-item {
   display: flex;
   justify-content: space-between;
@@ -350,7 +361,7 @@ body {
   margin-bottom: 18px;
 }
 
-/* 🔥 INFO (imagen + texto) */
+/*  INFO (imagen + texto) */
 .cart-item__info {
   display: flex;
   gap: 10px;
@@ -358,7 +369,7 @@ body {
   max-width: 65%;
 }
 
-/* 🔥 IMAGEN */
+/*  IMAGEN */
 .cart-item__info img {
   width: 55px;
   height: 55px;
@@ -366,7 +377,7 @@ body {
   border-radius: 8px;
 }
 
-/* 🔥 TEXTO */
+/*  TEXTO */
 .cart-item__text {
   display: flex;
   flex-direction: column;
@@ -377,27 +388,27 @@ body {
   line-height: 1.2;
 }
 
-/* 🔥 PRECIO BASE */
+/*  PRECIO BASE */
 .cart-price {
   font-size: 12px;
   color: #888;
 }
 
-/* 🔥 SUBTOTAL */
+/*  SUBTOTAL */
 .cart-subtotal {
   font-size: 14px;
   font-weight: 700;
   color: #000;
 }
 
-/* 🔥 CONTROLES (+ - 🗑) */
+/*  CONTROLES (+ - 🗑) */
 .cart-item__controls {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* 🔥 BOTONES */
+/*  BOTONES */
 .cart-item button {
   cursor: pointer;
   padding: 4px 7px;
@@ -405,13 +416,13 @@ body {
   background: white;
 }
 
-/* 🔥 CANTIDAD */
+/*  CANTIDAD */
 .cart-item__controls span {
   min-width: 22px;
   text-align: center;
 }
 
-/* 🔥 TOTAL FIJO ABAJO */
+/*  TOTAL FIJO ABAJO */
 .cart-total {
   padding: 15px 20px;
   border-top: 1px solid #eee;
