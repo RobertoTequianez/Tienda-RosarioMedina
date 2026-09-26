@@ -220,6 +220,58 @@
     margin-top: 5px;
   }
 
+  /* 🔥 Feature 02.6: selector de cantidad. Compacto y centrado, mismo
+     estilo discreto en todos los dispositivos (nada distinto entre
+     mobile/tablet/desktop aquí: solo cambia con el tamaño del modal
+     como el resto del contenido). Oculto vía JS (display:none) cuando
+     el producto está agotado. */
+  &__qty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    margin: 2px auto 0;
+  }
+
+  &__qty-btn {
+    width: 36px;
+    height: 36px;
+    min-height: 36px; // área táctil accesible
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: transparent;
+    color: $color-black;
+    border-radius: 50%;
+    cursor: pointer;
+
+    font-size: 16px;
+    line-height: 1;
+
+    transition: background 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  &__qty-value {
+    min-width: 24px;
+    text-align: center;
+
+    font-size: 15px;
+    font-weight: 600;
+  }
+
   /* Cerrar */
   &__close {
     position: absolute;
@@ -261,6 +313,24 @@
 
   .modal__image {
     height: clamp(380px, 45vh, 460px);
+  }
+}
+
+/* 🔥 Feature 02.6 — MOBILE: el botón AGREGAR del modal deja de ocupar
+   casi todo el ancho del modal. Únicamente esta zona (#modal-add DENTRO
+   del modal) cambia; las cards de producto (.product-card__btn en la
+   grilla) NO se tocan — siguen ocupando 100% de su card como siempre,
+   y desktop/tablet grande del modal tampoco cambia (conserva el diseño
+   ya aprobado en Feature 02.5). */
+@media (max-width: 768px) {
+  #modal-add {
+    width: min(100%, 240px);
+    min-height: 44px; // área táctil accesible
+
+    padding: 10px 18px;
+    margin-inline: auto;
+
+    white-space: nowrap; // evita que "AGREGADO ✓" salte a dos líneas
   }
 }
 

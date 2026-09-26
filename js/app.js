@@ -30,6 +30,13 @@ let btnRight;
 // sobrevivir entre abrirModal() y cerrarModal().
 let scrollYGuardado = 0;
 
+// SELECTOR DE CANTIDAD DEL MODAL (Feature 02.6)
+let modalQty; // .modal__qty: contenedor del selector [-] cantidad [+]
+let modalQtyMinus;
+let modalQtyPlus;
+let modalQtyValue;
+let cantidadSeleccionadaModal = 1; // cantidad a agregar cuando se presiona AGREGAR desde el modal
+
 document.addEventListener("DOMContentLoaded", () => {
     modal = document.getElementById("product-modal");
     modalTrack = document.getElementById("modal-track");
@@ -42,6 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modalDots = document.getElementById("modal-dots");
     btnLeft = document.querySelector(".modal__arrow--left");
     btnRight = document.querySelector(".modal__arrow--right");
+    modalQty = document.getElementById("modal-qty");
+    modalQtyMinus = document.getElementById("modal-qty-minus");
+    modalQtyPlus = document.getElementById("modal-qty-plus");
+    modalQtyValue = document.getElementById("modal-qty-value");
 
     if (btnLeft && btnRight) {
         btnLeft.addEventListener("click", (e) => {
@@ -79,10 +90,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (modalBtn) {
         modalBtn.addEventListener("click", () => {
-            if (productoSeleccionado) {
-                agregarAlCarrito(productoSeleccionado, modalBtn);
-                cerrarModal();
+            // modalBtn.disabled ya impide el click del navegador cuando el
+            // producto está agotado (actualizarEstadoAgregarModal); esta
+            // comprobación es un resguardo adicional, no el único mecanismo.
+            if (!productoSeleccionado || modalBtn.disabled) return;
+
+            agregarAlCarrito(productoSeleccionado, modalBtn, cantidadSeleccionadaModal);
+            cerrarModal();
+        });
+    }
+
+    // 🔥 Feature 02.6: selector de cantidad del modal. El tope se recalcula
+    // en cada clic (no queda fijo al abrir), porque el carrito pudo cambiar
+    // mientras el modal está abierto (p. ej. se agregó desde otra pestaña/
+    // acción). Toda la regla de "cuánto se puede agregar" vive en
+    // cantidadMaximaPermitida()/validarCantidadProducto() (js/carrito.js) —
+    // aquí solo se usa, no se reimplementa.
+    if (modalQtyMinus) {
+        modalQtyMinus.addEventListener("click", () => {
+            if (cantidadSeleccionadaModal > 1) {
+                cantidadSeleccionadaModal--;
+                actualizarSelectorCantidadModal();
             }
+        });
+    }
+
+    if (modalQtyPlus) {
+        modalQtyPlus.addEventListener("click", () => {
+            if (!productoSeleccionado) return;
+
+            const existente = carrito.find(p => p.id === productoSeleccionado.id);
+            const cantidadEnCarrito = existente ? existente.cantidad : 0;
+            const maxPermitido = cantidadMaximaPermitida(productoSeleccionado);
+            const maxDisponibleParaAgregar = Math.max(0, maxPermitido - cantidadEnCarrito);
+
+            if (cantidadSeleccionadaModal < maxDisponibleParaAgregar) {
+                cantidadSeleccionadaModal++;
+                actualizarSelectorCantidadModal();
+                return;
+            }
+
+            // Ya no se puede seleccionar más: se reutiliza la misma
+            // validación central (validarCantidadProducto) para decidir
+            // si el mensaje es de stock o de límite de compra — ninguna
+            // regla nueva/distinta aquí, solo se consulta el motivo.
+            const resultado = validarCantidadProducto(
+                productoSeleccionado,
+                cantidadEnCarrito + cantidadSeleccionadaModal + 1
+            );
+            mostrarToast(null, { tipo: resultado.motivo, producto: productoSeleccionado });
         });
     }
 
@@ -110,6 +166,11 @@ function crearCard(producto) {
     const card = document.createElement("div");
     card.classList.add("product-card");
 
+    // 🔥 Feature 02.6: producto agotado → botón AGOTADO, con el atributo
+    // "disabled" real (no solo apariencia por CSS), para que el navegador
+    // ni siquiera dispare el evento click.
+    const agotado = estaAgotado(producto);
+
     card.innerHTML = `
         <div class="product-card__image">
             <img src="${producto.imagen}" alt="${producto.nombre}">
@@ -119,7 +180,7 @@ function crearCard(producto) {
             <h3 class="product-card__title">${producto.nombre}</h3>
             <p class="product-card__price">$${producto.precio}</p>
 
-            <button class="product-card__btn">AGREGAR</button>
+            <button class="product-card__btn"${agotado ? " disabled" : ""}>${agotado ? "AGOTADO" : "AGREGAR"}</button>
         </div>
     `;
 
@@ -130,6 +191,8 @@ function crearCard(producto) {
         agregarAlCarrito(producto, btn);
     });
 
+    // El producto agotado sigue siendo visible y se puede abrir su modal
+    // (para informar al usuario) — solo el botón AGREGAR queda bloqueado.
     card.addEventListener("click", () => {
         abrirModal(producto);
     });
@@ -157,6 +220,76 @@ function abrirModal(producto) {
     modalTitle.textContent = producto.nombre;
     modalPrice.textContent = `$${producto.precio}`;
     modalDesc.textContent = producto.descripcion || "Producto premium.";
+
+    // 🔥 Feature 02.6: estado de stock/cantidad, siempre reseteado al abrir
+    // (nunca debe arrastrar el "AGREGADO ✓"/cantidad de una apertura previa,
+    // sea del mismo producto o de otro).
+    if (modalBtn._feedbackTimeoutId) {
+        clearTimeout(modalBtn._feedbackTimeoutId);
+        modalBtn._feedbackTimeoutId = null;
+    }
+    modalBtn.classList.remove("agregado");
+    cantidadSeleccionadaModal = 1;
+
+    actualizarEstadoAgregarModal();
+}
+
+/* 🔥 Feature 02.6: refleja en el modal si el producto está agotado
+   (botón AGREGAR → "AGOTADO", disabled=true, selector de cantidad
+   oculto) o disponible (selector visible, botón habilitado con su
+   tope recalculado). Se llama al abrir el modal. */
+function actualizarEstadoAgregarModal() {
+    if (!productoSeleccionado || !modalBtn) return;
+
+    const agotado = estaAgotado(productoSeleccionado);
+
+    if (agotado) {
+        modalBtn.disabled = true;
+        modalBtn.textContent = "AGOTADO";
+        if (modalQty) modalQty.style.display = "none";
+        return;
+    }
+
+    modalBtn.disabled = false;
+    modalBtn.textContent = "AGREGAR";
+    if (modalQty) modalQty.style.display = "";
+
+    actualizarSelectorCantidadModal();
+}
+
+/* Recalcula y refleja en el DOM el estado del selector [-] cantidad [+]
+   del modal: valor actual, y si cada flecha debe estar disabled según
+   cuánto quede disponible para agregar (stock/maxCompra menos lo que ya
+   hay en el carrito). Nunca deja la cantidad seleccionada en 0: el
+   mínimo visible siempre es 1, aunque no quede margen para agregar más
+   (en ese caso "+" queda disabled y el intento de AGREGAR se resuelve,
+   como siempre, vía validarCantidadProducto()). */
+function actualizarSelectorCantidadModal() {
+    if (!productoSeleccionado) return;
+
+    const existente = carrito.find(p => p.id === productoSeleccionado.id);
+    const cantidadEnCarrito = existente ? existente.cantidad : 0;
+    const maxPermitido = cantidadMaximaPermitida(productoSeleccionado);
+    const maxDisponibleParaAgregar = Math.max(0, maxPermitido - cantidadEnCarrito);
+
+    const topeSelector = Math.max(1, maxDisponibleParaAgregar);
+    if (cantidadSeleccionadaModal > topeSelector) cantidadSeleccionadaModal = topeSelector;
+    if (cantidadSeleccionadaModal < 1) cantidadSeleccionadaModal = 1;
+
+    if (modalQtyValue) modalQtyValue.textContent = cantidadSeleccionadaModal;
+    if (modalQtyMinus) {
+        // "-" sí se deshabilita en el mínimo (1): no hace falta mensaje,
+        // no hay acción de "quitar" en este selector (eso es ELIMINAR,
+        // ya en el carrito).
+        modalQtyMinus.disabled = cantidadSeleccionadaModal <= 1;
+        modalQtyMinus.setAttribute("aria-label", `Disminuir cantidad de ${productoSeleccionado.nombre}`);
+    }
+    if (modalQtyPlus) {
+        // "+" NUNCA se deshabilita por tope (ver su click handler): debe
+        // seguir siendo clickeable para que se muestre el mensaje de
+        // stock/límite al intentar pasarse.
+        modalQtyPlus.setAttribute("aria-label", `Aumentar cantidad de ${productoSeleccionado.nombre}`);
+    }
 }
 
 // Punto único de cierre. TODOS los caminos que cierran el modal (botón X,

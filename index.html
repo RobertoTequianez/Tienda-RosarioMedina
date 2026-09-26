@@ -154,6 +154,15 @@
         <p id="modal-price" class="modal__price"></p>
         <p id="modal-description" class="modal__description"></p>
 
+        <!-- 🔥 Feature 02.6: selector de cantidad. Oculto (display:none vía JS)
+             cuando el producto está agotado — no tiene sentido elegir cantidad
+             de algo que no se puede agregar. -->
+        <div class="modal__qty" id="modal-qty">
+          <button type="button" id="modal-qty-minus" class="modal__qty-btn" aria-label="Disminuir cantidad">&minus;</button>
+          <span id="modal-qty-value" class="modal__qty-value">1</span>
+          <button type="button" id="modal-qty-plus" class="modal__qty-btn" aria-label="Aumentar cantidad">+</button>
+        </div>
+
         <!-- 🔥 NUEVO BOTÓN -->
         <button class="product-card__btn" id="modal-add">
           AGREGAR

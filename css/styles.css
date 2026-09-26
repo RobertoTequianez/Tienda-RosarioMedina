@@ -295,6 +295,24 @@ body.scroll-lock {
   background: #111;
   color: #fff;
 }
+.product-card__btn {
+  /* 🔥 Feature 02.6: producto agotado. Deshabilitado real (atributo
+     disabled, no solo apariencia) — discreto, sin alertas rojas. */
+}
+.product-card__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: #111;
+  transform: none;
+}
+@media (hover: hover) {
+  .product-card__btn:disabled:hover {
+    background: transparent;
+    color: #111;
+    transform: none;
+  }
+}
 
 /* 📱 RESPONSIVE (AQUÍ ESTÁ LA MAGIA) */
 @media (max-width: 768px) {
@@ -434,6 +452,13 @@ body.scroll-lock {
   padding: 4px 7px;
   border: 1px solid #ccc;
   background: white;
+}
+
+/* 🔥 Feature 02.6: botones +/- deshabilitados (cantidad mínima=1 o tope
+   de stock/límite de compra alcanzado). Discreto, sin cambiar tamaño. */
+.cart-item button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /*  CANTIDAD */
@@ -634,6 +659,49 @@ body.scroll-lock {
   margin-top: 5px;
 }
 .modal {
+  /* 🔥 Feature 02.6: selector de cantidad. Compacto y centrado, mismo
+     estilo discreto en todos los dispositivos (nada distinto entre
+     mobile/tablet/desktop aquí: solo cambia con el tamaño del modal
+     como el resto del contenido). Oculto vía JS (display:none) cuando
+     el producto está agotado. */
+}
+.modal__qty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 2px auto 0;
+}
+.modal__qty-btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: transparent;
+  color: #111;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.2s ease;
+}
+.modal__qty-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+.modal__qty-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.modal__qty-value {
+  min-width: 24px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+.modal {
   /* Cerrar */
 }
 .modal__close {
@@ -668,6 +736,21 @@ body.scroll-lock {
   }
   .modal__image {
     height: clamp(380px, 45vh, 460px);
+  }
+}
+/* 🔥 Feature 02.6 — MOBILE: el botón AGREGAR del modal deja de ocupar
+   casi todo el ancho del modal. Únicamente esta zona (#modal-add DENTRO
+   del modal) cambia; las cards de producto (.product-card__btn en la
+   grilla) NO se tocan — siguen ocupando 100% de su card como siempre,
+   y desktop/tablet grande del modal tampoco cambia (conserva el diseño
+   ya aprobado en Feature 02.5). */
+@media (max-width: 768px) {
+  #modal-add {
+    width: min(100%, 240px);
+    min-height: 44px;
+    padding: 10px 18px;
+    margin-inline: auto;
+    white-space: nowrap;
   }
 }
 /* Respeta prefers-reduced-motion: quita transiciones/escalados

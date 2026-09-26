@@ -99,6 +99,13 @@
   background: white;
 }
 
+/* 🔥 Feature 02.6: botones +/- deshabilitados (cantidad mínima=1 o tope
+   de stock/límite de compra alcanzado). Discreto, sin cambiar tamaño. */
+.cart-item button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /*  CANTIDAD */
 .cart-item__controls span {
   min-width: 22px;

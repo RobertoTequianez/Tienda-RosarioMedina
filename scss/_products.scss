@@ -150,6 +150,24 @@
       background: $color-black;
       color: $color-white;
     }
+
+    /* 🔥 Feature 02.6: producto agotado. Deshabilitado real (atributo
+       disabled, no solo apariencia) — discreto, sin alertas rojas. */
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: transparent;
+      color: $color-black;
+      transform: none;
+
+      @media (hover: hover) {
+        &:hover {
+          background: transparent;
+          color: $color-black;
+          transform: none;
+        }
+      }
+    }
   }
 }
 
