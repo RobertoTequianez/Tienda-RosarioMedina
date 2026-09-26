@@ -469,6 +469,8 @@ body.scroll-lock {
   align-items: center;
   z-index: 3000;
   overscroll-behavior: contain;
+  overflow-y: auto;
+  padding: 20px 0;
 }
 .modal.active {
   display: flex;
@@ -486,10 +488,7 @@ body.scroll-lock {
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
 }
 .modal {
-  /* Envuelve imagen + controles. Es el ancla real de posicionamiento   */
-  /* para .modal__controls en desktop (position:absolute), en vez de   */
-  /* .modal__content completo — así los controles quedan superpuestos  */
-  /* exactamente sobre el área de la imagen, no sobre todo el modal.   */
+  /* Envuelve imagen + controles. */
 }
 .modal__carousel {
   position: relative;
@@ -540,54 +539,82 @@ body.scroll-lock {
   pointer-events: none;
 }
 .modal {
-  /* Controles del carrusel (flechas + dots).
-     DESKTOP (por defecto / min-width 769px, ver media query abajo):
-       se posicionan superpuestos sobre la imagen, exactamente como
-       en la versión ya aprobada. Los dots quedan ocultos.
-     MOBILE/TABLET PEQUEÑA (≤768px): pasan a ser una barra propia,
-     en flujo normal, debajo de la imagen (ver media query abajo). */
+  /* 🔥 Feature 02.5: controles del carrusel (flechas + dots) HOMOLOGADOS.
+     Misma estructura y el mismo estilo discreto en TODOS los dispositivos
+     (mobile, tablet, desktop): siempre en flujo normal, debajo de la
+     imagen, nunca superpuestos. Lo único que cambia entre breakpoints es
+     tamaño del modal / imagen (ver media query de desktop más abajo),
+     no la arquitectura visual del carrusel. */
 }
 .modal__controls {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  transform: translateY(-50%);
+  position: static;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: 20;
+  justify-content: center;
+  gap: 14px;
+  padding: 0;
+  margin-top: 8px;
+  min-height: 36px;
+  pointer-events: auto;
 }
 .modal {
-  /* En desktop no se muestran dots: solo las flechas superpuestas de siempre */
+  /* Dots: visibles en todos los dispositivos cuando hay varias imágenes.
+     .modal__controls ya se oculta entero (display:none, ver js/app.js
+     actualizarVisibilidadControles) cuando el producto tiene una sola
+     imagen, así que aquí no hace falta un caso especial para eso. */
 }
 .modal__dots {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.modal__dots button {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.modal__dots button::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ccc;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.modal__dots button[aria-current=true]::before {
+  background: #111;
+  transform: scale(1.15);
 }
 .modal {
-  /* Flechas — mismo tamaño/color/posición visual que la versión desktop aprobada */
+  /* Flechas discretas: círculo sutil, fondo claro, icono oscuro.
+     Mismo estilo en todos los dispositivos (antes exclusivo de mobile). */
 }
 .modal__arrow {
+  position: static;
   pointer-events: auto;
-  background: rgba(0, 0, 0, 0.3);
-  color: white;
-  border: none;
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.05);
+  color: #111;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  transition: all 0.2s ease;
+  font-size: 13px;
+  box-shadow: none;
+  transition: background 0.2s ease;
 }
-.modal__arrow:hover {
-  background: rgba(0, 0, 0, 0.6);
-  transform: scale(1.1);
+.modal__arrow:hover, .modal__arrow:active {
+  background: rgba(0, 0, 0, 0.1);
+  transform: none;
 }
 .modal {
   /* Texto */
@@ -629,71 +656,18 @@ body.scroll-lock {
   background: #ddd;
 }
 
-/* 🔥 MOBILE / TABLET PEQUEÑA — Feature 02.2
-   Únicamente estos breakpoints se ven afectados. Desktop (>768px)
-   no cambia: conserva las flechas superpuestas tal cual estaban. */
-@media (max-width: 768px) {
-  .modal {
-    /* Permite scroll vertical del modal si el contenido (imagen +
-       info + nueva barra de controles) no cabe en pantallas bajas. */
-    overflow-y: auto;
-    padding: 20px 0;
+/* 🔥 Feature 02.5 — DESKTOP: modal e imagen más grandes.
+   Único bloque que distingue desktop de mobile/tablet: agranda el
+   contenedor del modal y el área de imagen. La arquitectura visual del
+   carrusel (controles debajo, dots, flechas discretas) es la MISMA que
+   en mobile/tablet — homologada, ver reglas base arriba. */
+@media (min-width: 769px) {
+  .modal__content {
+    width: min(88vw, 800px);
+    max-width: 800px;
   }
-  .modal__controls {
-    /* Deja de superponerse: pasa a flujo normal, debajo de la imagen */
-    position: static;
-    transform: none;
-    justify-content: center;
-    gap: 14px;
-    padding: 0;
-    margin-top: 8px;
-    min-height: 36px;
-    pointer-events: auto;
-  }
-  .modal__dots {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-  }
-  .modal__dots button {
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-  .modal__dots button::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #ccc;
-    transition: background 0.2s ease, transform 0.2s ease;
-  }
-  .modal__dots button[aria-current=true]::before {
-    background: #111;
-    transform: scale(1.15);
-  }
-  .modal {
-    /* Flechas discretas: círculo sutil, fondo claro, icono oscuro */
-  }
-  .modal__arrow {
-    position: static;
-    width: 32px;
-    height: 32px;
-    background: rgba(0, 0, 0, 0.05);
-    color: #111;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    font-size: 13px;
-    box-shadow: none;
-  }
-  .modal__arrow:hover, .modal__arrow:active {
-    background: rgba(0, 0, 0, 0.1);
-    transform: none;
+  .modal__image {
+    height: clamp(380px, 45vh, 460px);
   }
 }
 /* Respeta prefers-reduced-motion: quita transiciones/escalados
