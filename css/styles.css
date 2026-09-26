@@ -540,19 +540,6 @@ body {
   margin-top: 5px;
 }
 .modal {
-  /* Botón */
-}
-.modal__btn {
-  margin-top: 15px;
-  padding: 12px;
-  border: none;
-  background: black;
-  color: white;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.modal {
   /* Cerrar */
 }
 .modal__close {

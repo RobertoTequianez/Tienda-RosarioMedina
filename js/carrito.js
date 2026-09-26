@@ -80,10 +80,10 @@ function renderCarrito() {
             </div>
 
             <div class="cart-item__controls">
-                <button onclick="restar(${prod.id})">-</button>
+                <button data-action="restar" data-id="${prod.id}">-</button>
                 <span>${prod.cantidad}</span>
-                <button onclick="sumar(${prod.id})">+</button>
-                <button onclick="eliminar(${prod.id})">🗑</button>
+                <button data-action="sumar" data-id="${prod.id}">+</button>
+                <button data-action="eliminar" data-id="${prod.id}">🗑</button>
             </div>
         `;
 
@@ -150,8 +150,26 @@ function eliminar(id) {
     actualizarContador();
 }
 
-/* 🔥 INICIALIZAR */
-document.addEventListener("DOMContentLoaded", () => {
-    actualizarContador();
-    renderCarrito();
-});
+/* 🔥 DELEGACIÓN DE EVENTOS (sumar/restar/eliminar) */
+/* Un único listener sobre el contenedor estable #cart-items.       */
+/* No se registra en cada renderCarrito(): el contenedor ya existe  */
+/* en el DOM antes de este script (script al final del body).       */
+const contenedorCarrito = document.getElementById("cart-items");
+
+if (contenedorCarrito) {
+    contenedorCarrito.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-action]");
+        if (!btn) return;
+
+        const id = Number(btn.dataset.id);
+        const accion = btn.dataset.action;
+
+        if (accion === "sumar") sumar(id);
+        else if (accion === "restar") restar(id);
+        else if (accion === "eliminar") eliminar(id);
+    });
+}
+
+/* La inicialización (actualizarContador/renderCarrito) queda a cargo   */
+/* del DOMContentLoaded de app.js, que ya la ejecuta. Se elimina aquí   */
+/* la inicialización duplicada que existía en este archivo.            */

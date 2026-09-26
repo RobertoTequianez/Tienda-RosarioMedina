@@ -1,30 +1,3 @@
-/*const productos = [
-    {
-        id: 1,
-        nombre: "Bra Push-Up",
-        precio: 599,
-        imagen: "assets/videos/images/producto1.jpg"
-    },
-    {
-        id: 2,
-        nombre: "Panty Básico",
-        precio: 299,
-        imagen: "assets/videos/images/producto2.jpg"
-    },
-    {
-        id: 3,
-        nombre: "Lencería Premium",
-        precio: 799,
-        imagen: "assets/videos/images/producto3.png"
-    },
-    {
-        id: 4,
-        nombre: "Set Deportivo",
-        precio: 999,
-        imagen: "assets/videos/images/producto4.jpg"
-    }
-];
-*/
 const productos = [
   {
     id: 1,
