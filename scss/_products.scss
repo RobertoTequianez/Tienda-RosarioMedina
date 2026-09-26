@@ -143,6 +143,13 @@
       color: $color-white;
       transform: scale(0.96);
     }
+
+    /* 🔥 Feedback temporal al agregar (AGREGADO ✓). Reutiliza el mismo
+       negro de :hover/:active, no introduce color nuevo. */
+    &.agregado {
+      background: $color-black;
+      color: $color-white;
+    }
   }
 }
 

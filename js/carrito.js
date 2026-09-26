@@ -39,7 +39,12 @@ function calcularTotalFinal() {
 }
 
 /* 🔥 AGREGAR PRODUCTO */
-function agregarAlCarrito(producto) {
+/* Punto común de la acción "agregar al carrito", usado tanto desde   */
+/* la card del producto como desde el modal (Feature 02.1). El        */
+/* parámetro "boton" es opcional: si se recibe, ese botón también     */
+/* recibe el feedback visual temporal (AGREGADO ✓). El toast se       */
+/* dispara siempre, sin importar el origen.                           */
+function agregarAlCarrito(producto, boton) {
     const existe = carrito.find(p => p.id === producto.id);
 
     if (existe) {
@@ -51,6 +56,48 @@ function agregarAlCarrito(producto) {
     guardarCarrito();
     actualizarContador();
     renderCarrito();
+
+    mostrarToast(producto.nombre);
+    if (boton) marcarBotonComoAgregado(boton);
+}
+
+/* 🔥 TOAST DE FEEDBACK — un único toast reutilizado. Si el usuario   */
+/* agrega varios productos rápido, se actualiza el texto y se         */
+/* reinicia el temporizador en vez de apilar notificaciones.          */
+let toastTimeoutId = null;
+
+function mostrarToast(nombreProducto) {
+    const toast = document.getElementById("toast");
+    if (!toast) return;
+
+    toast.innerHTML = `
+        <strong>${nombreProducto} se agregó al carrito</strong>
+        <span>Ya puedes seguir comprando.</span>
+    `;
+
+    toast.classList.add("toast--visible");
+
+    if (toastTimeoutId) clearTimeout(toastTimeoutId);
+    toastTimeoutId = setTimeout(() => {
+        toast.classList.remove("toast--visible");
+        toastTimeoutId = null;
+    }, 2500);
+}
+
+/* 🔥 FEEDBACK TEMPORAL DEL BOTÓN (AGREGAR → AGREGADO ✓ → AGREGAR).   */
+/* No deshabilita el botón: solo cambia texto/clase por ~1.2s.        */
+/* Si se hace clic varias veces seguidas, reinicia su propio          */
+/* temporizador en vez de dejar timers superpuestos.                  */
+function marcarBotonComoAgregado(boton) {
+    boton.textContent = "AGREGADO ✓";
+    boton.classList.add("agregado");
+
+    if (boton._feedbackTimeoutId) clearTimeout(boton._feedbackTimeoutId);
+    boton._feedbackTimeoutId = setTimeout(() => {
+        boton.textContent = "AGREGAR";
+        boton.classList.remove("agregado");
+        boton._feedbackTimeoutId = null;
+    }, 1200);
 }
 
 /* 🔥 RENDER DEL CARRITO */

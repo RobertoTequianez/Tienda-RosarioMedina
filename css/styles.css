@@ -275,6 +275,14 @@ body {
   color: #fff;
   transform: scale(0.96);
 }
+.product-card__btn {
+  /* 🔥 Feedback temporal al agregar (AGREGADO ✓). Reutiliza el mismo
+     negro de :hover/:active, no introduce color nuevo. */
+}
+.product-card__btn.agregado {
+  background: #111;
+  color: #fff;
+}
 
 /* 📱 RESPONSIVE (AQUÍ ESTÁ LA MAGIA) */
 @media (max-width: 768px) {
@@ -577,6 +585,59 @@ body {
 }
 .modal__close:hover {
   background: #ddd;
+}
+
+/* 🔥 TOAST — feedback visual al agregar al carrito */
+.toast {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  opacity: 0;
+  visibility: hidden;
+  max-width: calc(100% - 40px);
+  box-sizing: border-box;
+  background: #111;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+  z-index: 4000;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+}
+.toast strong {
+  display: block;
+  font-weight: 600;
+}
+.toast span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.toast--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* 🔥 FIX MOBILE */
+@media (max-width: 768px) {
+  .toast {
+    top: 50px;
+  }
+}
+/* Respeta la preferencia de movimiento reducido del usuario */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: opacity 0.15s linear, visibility 0.15s linear;
+    transform: translate(-50%, 0) !important;
+  }
 }
 
 /*# sourceMappingURL=styles.css.map */

@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modalBtn) {
         modalBtn.addEventListener("click", () => {
             if (productoSeleccionado) {
-                agregarAlCarrito(productoSeleccionado);
+                agregarAlCarrito(productoSeleccionado, modalBtn);
                 modal.classList.remove("active");
             }
         });
@@ -113,7 +113,7 @@ function crearCard(producto) {
 
     btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        agregarAlCarrito(producto);
+        agregarAlCarrito(producto, btn);
     });
 
     card.addEventListener("click", () => {
