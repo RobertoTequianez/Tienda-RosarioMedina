@@ -670,7 +670,7 @@ body.scroll-lock {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  margin: 2px auto 0;
+  margin: 4px auto 16px;
 }
 .modal__qty-btn {
   width: 36px;
@@ -737,16 +737,33 @@ body.scroll-lock {
   .modal__image {
     height: clamp(380px, 45vh, 460px);
   }
+  /* 🔥 Ajuste visual: el modal desktop es más ancho (hasta 800px), y
+     #modal-add heredaba width:100% de .product-card__btn — se veía
+     excesivamente largo. Se acota y centra, igual que en mobile, solo
+     que con un poco más de aire acorde al modal más grande.
+     "display: block" es necesario para que "margin-inline: auto" centre
+     de verdad: un <button> es "inline-block" por defecto (no lo fija
+     ninguna regla de .product-card__btn), y los márgenes automáticos no
+     tienen efecto de centrado sobre cajas inline-block — solo sobre
+     cajas de bloque. Sin esto, el botón quedaba pegado a la izquierda
+     pese al margin-inline:auto. */
+  #modal-add {
+    display: block;
+    width: min(100%, 260px);
+    min-height: 44px;
+    padding: 10px 18px;
+    margin-inline: auto;
+    white-space: nowrap;
+  }
 }
 /* 🔥 Feature 02.6 — MOBILE: el botón AGREGAR del modal deja de ocupar
    casi todo el ancho del modal. Únicamente esta zona (#modal-add DENTRO
    del modal) cambia; las cards de producto (.product-card__btn en la
-   grilla) NO se tocan — siguen ocupando 100% de su card como siempre,
-   y desktop/tablet grande del modal tampoco cambia (conserva el diseño
-   ya aprobado en Feature 02.5). */
+   grilla) NO se tocan — siguen ocupando 100% de su card como siempre. */
 @media (max-width: 768px) {
   #modal-add {
-    width: min(100%, 240px);
+    display: block;
+    width: min(100%, 220px);
     min-height: 44px;
     padding: 10px 18px;
     margin-inline: auto;
