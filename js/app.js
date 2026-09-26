@@ -9,7 +9,7 @@ let listaImagenes = [];
 
 // MODAL
 let modal;
-let modalImageContainer; // contenedor .modal__image con scroll-snap (carrusel DOM real)
+let modalTrack; // .modal__track: único elemento que hace scroll (carrusel DOM real)
 let modalTitle;
 let modalPrice;
 let modalDesc;
@@ -24,7 +24,7 @@ let btnRight;
 
 document.addEventListener("DOMContentLoaded", () => {
     modal = document.getElementById("product-modal");
-    modalImageContainer = document.getElementById("modal-image");
+    modalTrack = document.getElementById("modal-track");
     modalTitle = document.getElementById("modal-title");
     modalPrice = document.getElementById("modal-price");
     modalDesc = document.getElementById("modal-description");
@@ -54,12 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Mantiene imagenActual sincronizado cuando el usuario desliza
     // el carrusel manualmente (swipe táctil / scroll con mouse),
     // para que las flechas sigan navegando desde la imagen correcta.
-    if (modalImageContainer) {
-        modalImageContainer.addEventListener("scroll", () => {
-            const ancho = modalImageContainer.clientWidth;
+    if (modalTrack) {
+        modalTrack.addEventListener("scroll", () => {
+            const ancho = modalTrack.clientWidth;
             if (!ancho || listaImagenes.length <= 1) return;
 
-            imagenActual = Math.round(modalImageContainer.scrollLeft / ancho);
+            imagenActual = Math.round(modalTrack.scrollLeft / ancho);
         });
     }
 
@@ -141,21 +141,23 @@ function abrirModal(producto) {
 }
 
 /* CARRUSEL DEL MODAL (DOM real con scroll-snap, no reemplazo de src) */
+/* Las imágenes viven dentro de .modal__track (único elemento que   */
+/* hace scroll). Las flechas son hermanas del track, position:absolute */
+/* respecto a .modal__image, y por eso permanecen fijas visualmente */
+/* sin importar cuál imagen esté visible.                            */
 function renderCarruselModal(nombreProducto) {
-    if (!modalImageContainer) return;
+    if (!modalTrack) return;
 
-    // Elimina únicamente las imágenes previas; las flechas (botones)
-    // no se tocan, siguen siendo hijas fijas del contenedor.
-    modalImageContainer.querySelectorAll("img").forEach(img => img.remove());
+    modalTrack.innerHTML = "";
 
     listaImagenes.forEach((src, i) => {
         const img = document.createElement("img");
         img.src = src;
         img.alt = `${nombreProducto} - imagen ${i + 1}`;
-        modalImageContainer.insertBefore(img, btnRight);
+        modalTrack.appendChild(img);
     });
 
-    modalImageContainer.scrollLeft = 0;
+    modalTrack.scrollLeft = 0;
     actualizarVisibilidadFlechas();
 }
 
@@ -167,10 +169,10 @@ function actualizarVisibilidadFlechas() {
 }
 
 function desplazarCarruselA(indice) {
-    if (!modalImageContainer) return;
+    if (!modalTrack) return;
 
-    const ancho = modalImageContainer.clientWidth;
-    modalImageContainer.scrollTo({ left: ancho * indice, behavior: "smooth" });
+    const ancho = modalTrack.clientWidth;
+    modalTrack.scrollTo({ left: ancho * indice, behavior: "smooth" });
 }
 
 /* BOTÓN AGREGAR DESDE MODAL */

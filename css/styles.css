@@ -465,24 +465,41 @@ body {
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
 }
 .modal {
-  /* Contenedor de imagen con scroll horizontal */
+  /* Contenedor visual fijo: las flechas viven aquí y NO se desplazan.
+     Solo .modal__track (adentro) hace scroll horizontal. */
 }
 .modal__image {
   width: 100%;
   height: 260px;
   display: flex;
   align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+.modal {
+  /* Track desplazable: único elemento con scroll-snap y overflow-x */
+}
+.modal__track {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  position: relative;
-  gap: 10px;
+  /* Oculta la barra de scroll manteniendo el scroll funcional */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.modal__track::-webkit-scrollbar {
+  display: none;
 }
 .modal {
-  /* Cada imagen ocupa todo el ancho */
+  /* Cada imagen ocupa todo el ancho del track */
 }
-.modal__image img {
+.modal__track img {
   flex: 0 0 100%;
   max-width: 100%;
   max-height: 100%;

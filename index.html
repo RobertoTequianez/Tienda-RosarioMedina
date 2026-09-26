@@ -125,10 +125,11 @@
 
       <!-- 🔥 IMAGEN CONTROLADA -->
       <div class="modal__image" id="modal-image">
-          <!-- 🔥 FLECHA IZQUIERDA -->
+          <!-- 🔥 FLECHA IZQUIERDA (fija, no forma parte del track que hace scroll) -->
        <button class="modal__arrow modal__arrow--left">&#10094;</button>
-         <!-- 🔥 Las imágenes del carrusel se insertan aquí dinámicamente (js/app.js) -->
-         <!-- 🔥 FLECHA DERECHA -->
+        <!-- 🔥 Track desplazable: aquí se insertan las imágenes dinámicamente (js/app.js) -->
+        <div class="modal__track" id="modal-track"></div>
+         <!-- 🔥 FLECHA DERECHA (fija, no forma parte del track que hace scroll) -->
        <button class="modal__arrow modal__arrow--right">&#10095;</button>
       </div>
 
