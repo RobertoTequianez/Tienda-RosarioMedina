@@ -9,7 +9,7 @@ let listaImagenes = [];
 
 // MODAL
 let modal;
-let modalImg;
+let modalImageContainer; // contenedor .modal__image con scroll-snap (carrusel DOM real)
 let modalTitle;
 let modalPrice;
 let modalDesc;
@@ -24,7 +24,7 @@ let btnRight;
 
 document.addEventListener("DOMContentLoaded", () => {
     modal = document.getElementById("product-modal");
-    modalImg = document.getElementById("modal-image");
+    modalImageContainer = document.getElementById("modal-image");
     modalTitle = document.getElementById("modal-title");
     modalPrice = document.getElementById("modal-price");
     modalDesc = document.getElementById("modal-description");
@@ -36,24 +36,30 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnLeft && btnRight) {
         btnLeft.addEventListener("click", (e) => {
             e.stopPropagation();
+            if (listaImagenes.length <= 1) return;
 
-            imagenActual--;
-            if (imagenActual < 0) {
-                imagenActual = listaImagenes.length - 1;
-            }
-
-            modalImg.src = listaImagenes[imagenActual];
+            imagenActual = (imagenActual - 1 + listaImagenes.length) % listaImagenes.length;
+            desplazarCarruselA(imagenActual);
         });
 
         btnRight.addEventListener("click", (e) => {
             e.stopPropagation();
+            if (listaImagenes.length <= 1) return;
 
-            imagenActual++;
-            if (imagenActual >= listaImagenes.length) {
-                imagenActual = 0;
-            }
+            imagenActual = (imagenActual + 1) % listaImagenes.length;
+            desplazarCarruselA(imagenActual);
+        });
+    }
 
-            modalImg.src = listaImagenes[imagenActual];
+    // Mantiene imagenActual sincronizado cuando el usuario desliza
+    // el carrusel manualmente (swipe táctil / scroll con mouse),
+    // para que las flechas sigan navegando desde la imagen correcta.
+    if (modalImageContainer) {
+        modalImageContainer.addEventListener("scroll", () => {
+            const ancho = modalImageContainer.clientWidth;
+            if (!ancho || listaImagenes.length <= 1) return;
+
+            imagenActual = Math.round(modalImageContainer.scrollLeft / ancho);
         });
     }
 
@@ -127,21 +133,51 @@ function abrirModal(producto) {
     listaImagenes = producto.imagenes || [producto.imagen];
     imagenActual = 0;
 
-    modalImg.src = listaImagenes[imagenActual];
+    renderCarruselModal(producto.nombre);
 
     modalTitle.textContent = producto.nombre;
     modalPrice.textContent = `$${producto.precio}`;
     modalDesc.textContent = producto.descripcion || "Producto premium.";
 }
 
-/* FLECHAS CARRUSEL */
-// event binding moved to DOMContentLoaded to guarantee the modal elements exist
+/* CARRUSEL DEL MODAL (DOM real con scroll-snap, no reemplazo de src) */
+function renderCarruselModal(nombreProducto) {
+    if (!modalImageContainer) return;
+
+    // Elimina únicamente las imágenes previas; las flechas (botones)
+    // no se tocan, siguen siendo hijas fijas del contenedor.
+    modalImageContainer.querySelectorAll("img").forEach(img => img.remove());
+
+    listaImagenes.forEach((src, i) => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = `${nombreProducto} - imagen ${i + 1}`;
+        modalImageContainer.insertBefore(img, btnRight);
+    });
+
+    modalImageContainer.scrollLeft = 0;
+    actualizarVisibilidadFlechas();
+}
+
+function actualizarVisibilidadFlechas() {
+    const hayVariasImagenes = listaImagenes.length > 1;
+
+    if (btnLeft) btnLeft.style.display = hayVariasImagenes ? "flex" : "none";
+    if (btnRight) btnRight.style.display = hayVariasImagenes ? "flex" : "none";
+}
+
+function desplazarCarruselA(indice) {
+    if (!modalImageContainer) return;
+
+    const ancho = modalImageContainer.clientWidth;
+    modalImageContainer.scrollTo({ left: ancho * indice, behavior: "smooth" });
+}
 
 /* BOTÓN AGREGAR DESDE MODAL */
-// event binding moved to DOMContentLoaded to guarantee the modal elements exist
+// event binding en DOMContentLoaded (arriba)
 
 /* CERRAR MODAL */
-// event binding moved to DOMContentLoaded to guarantee the modal elements exist
+// event binding en DOMContentLoaded (arriba)
 
 
 /* RENDER PRODUCTOS */
