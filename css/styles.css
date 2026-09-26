@@ -473,7 +473,16 @@ body {
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
 }
 .modal {
-  /* Contenedor visual fijo: las flechas viven aquí y NO se desplazan.
+  /* Envuelve imagen + controles. Es el ancla real de posicionamiento   */
+  /* para .modal__controls en desktop (position:absolute), en vez de   */
+  /* .modal__content completo — así los controles quedan superpuestos  */
+  /* exactamente sobre el área de la imagen, no sobre todo el modal.   */
+}
+.modal__carousel {
+  position: relative;
+}
+.modal {
+  /* Contenedor visual fijo: la imagen no se desplaza.
      Solo .modal__track (adentro) hace scroll horizontal. */
 }
 .modal__image {
@@ -517,13 +526,38 @@ body {
   pointer-events: none;
 }
 .modal {
-  /* Flechas */
+  /* Controles del carrusel (flechas + dots).
+     DESKTOP (por defecto / min-width 769px, ver media query abajo):
+       se posicionan superpuestos sobre la imagen, exactamente como
+       en la versión ya aprobada. Los dots quedan ocultos.
+     MOBILE/TABLET PEQUEÑA (≤768px): pasan a ser una barra propia,
+     en flujo normal, debajo de la imagen (ver media query abajo). */
 }
-.modal__arrow {
+.modal__controls {
   position: absolute;
   top: 50%;
+  left: 0;
+  right: 0;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  box-sizing: border-box;
+  pointer-events: none;
   z-index: 20;
+}
+.modal {
+  /* En desktop no se muestran dots: solo las flechas superpuestas de siempre */
+}
+.modal__dots {
+  display: none;
+}
+.modal {
+  /* Flechas — mismo tamaño/color/posición visual que la versión desktop aprobada */
+}
+.modal__arrow {
+  pointer-events: auto;
   background: rgba(0, 0, 0, 0.3);
   color: white;
   border: none;
@@ -537,15 +571,9 @@ body {
   font-size: 18px;
   transition: all 0.2s ease;
 }
-.modal__arrow--left {
-  left: 10px;
-}
-.modal__arrow--right {
-  right: 10px;
-}
 .modal__arrow:hover {
   background: rgba(0, 0, 0, 0.6);
-  transform: translateY(-50%) scale(1.1);
+  transform: scale(1.1);
 }
 .modal {
   /* Texto */
@@ -587,6 +615,93 @@ body {
   background: #ddd;
 }
 
+/* 🔥 MOBILE / TABLET PEQUEÑA — Feature 02.2
+   Únicamente estos breakpoints se ven afectados. Desktop (>768px)
+   no cambia: conserva las flechas superpuestas tal cual estaban. */
+@media (max-width: 768px) {
+  .modal {
+    /* Permite scroll vertical del modal si el contenido (imagen +
+       info + nueva barra de controles) no cabe en pantallas bajas. */
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+  .modal__controls {
+    /* Deja de superponerse: pasa a flujo normal, debajo de la imagen */
+    position: static;
+    transform: none;
+    justify-content: center;
+    gap: 14px;
+    padding: 0;
+    margin-top: 8px;
+    min-height: 36px;
+    pointer-events: auto;
+  }
+  .modal__dots {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .modal__dots button {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .modal__dots button::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ccc;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .modal__dots button[aria-current=true]::before {
+    background: #111;
+    transform: scale(1.15);
+  }
+  .modal {
+    /* Flechas discretas: círculo sutil, fondo claro, icono oscuro */
+  }
+  .modal__arrow {
+    position: static;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #111;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 13px;
+    box-shadow: none;
+  }
+  .modal__arrow:hover, .modal__arrow:active {
+    background: rgba(0, 0, 0, 0.1);
+    transform: none;
+  }
+}
+/* Respeta prefers-reduced-motion: quita transiciones/escalados
+   no esenciales de flechas y dots. El carrusel sigue siendo
+   100% funcional (swipe, flechas y dots sin animación). */
+@media (prefers-reduced-motion: reduce) {
+  .modal__arrow {
+    transition: none;
+  }
+  .modal__arrow:hover {
+    transform: none;
+  }
+  .modal__dots button::before {
+    transition: none;
+  }
+  .modal__dots button[aria-current=true]::before {
+    transform: none;
+  }
+  .modal__track {
+    scroll-behavior: auto;
+  }
+}
 /* 🔥 TOAST — feedback visual al agregar al carrito */
 .toast {
   position: fixed;

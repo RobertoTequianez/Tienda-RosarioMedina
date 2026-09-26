@@ -18,7 +18,9 @@ let closeModal;
 // BOTÓN MODAL
 let modalBtn;
 
-// FLECHAS
+// FLECHAS Y DOTS (controles del carrusel del modal)
+let modalControls; // .modal__controls: contenedor de flechas + dots
+let modalDots; // .modal__dots: contenedor de los indicadores de posición
 let btnLeft;
 let btnRight;
 
@@ -30,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
     modalDesc = document.getElementById("modal-description");
     closeModal = document.getElementById("close-modal");
     modalBtn = document.getElementById("modal-add");
+    modalControls = document.getElementById("modal-controls");
+    modalDots = document.getElementById("modal-dots");
     btnLeft = document.querySelector(".modal__arrow--left");
     btnRight = document.querySelector(".modal__arrow--right");
 
@@ -40,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             imagenActual = (imagenActual - 1 + listaImagenes.length) % listaImagenes.length;
             desplazarCarruselA(imagenActual);
+            actualizarDotsActivos();
         });
 
         btnRight.addEventListener("click", (e) => {
@@ -48,18 +53,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
             imagenActual = (imagenActual + 1) % listaImagenes.length;
             desplazarCarruselA(imagenActual);
+            actualizarDotsActivos();
         });
     }
 
-    // Mantiene imagenActual sincronizado cuando el usuario desliza
-    // el carrusel manualmente (swipe táctil / scroll con mouse),
-    // para que las flechas sigan navegando desde la imagen correcta.
+    // Mantiene imagenActual (y los dots) sincronizados cuando el usuario
+    // desliza el carrusel manualmente (swipe táctil / scroll con mouse),
+    // para que flechas y dots sigan reflejando la imagen visible real.
+    // Es el único índice que existe: no se mantiene un contador aparte.
     if (modalTrack) {
         modalTrack.addEventListener("scroll", () => {
             const ancho = modalTrack.clientWidth;
             if (!ancho || listaImagenes.length <= 1) return;
 
             imagenActual = Math.round(modalTrack.scrollLeft / ancho);
+            actualizarDotsActivos();
         });
     }
 
@@ -141,10 +149,12 @@ function abrirModal(producto) {
 }
 
 /* CARRUSEL DEL MODAL (DOM real con scroll-snap, no reemplazo de src) */
-/* Las imágenes viven dentro de .modal__track (único elemento que   */
-/* hace scroll). Las flechas son hermanas del track, position:absolute */
-/* respecto a .modal__image, y por eso permanecen fijas visualmente */
-/* sin importar cuál imagen esté visible.                            */
+/* Las imágenes viven dentro de .modal__track (único elemento que hace  */
+/* scroll). Los controles (.modal__controls: flechas + dots) son        */
+/* hermanos del track/imagen: en desktop el CSS los superpone sobre la  */
+/* imagen (como siempre); en mobile/tablet pequeña el CSS los coloca en */
+/* una barra propia debajo (Feature 02.2). El DOM y la lógica JS son    */
+/* los mismos para ambos casos — solo cambia el CSS por breakpoint.     */
 function renderCarruselModal(nombreProducto) {
     if (!modalTrack) return;
 
@@ -158,21 +168,72 @@ function renderCarruselModal(nombreProducto) {
     });
 
     modalTrack.scrollLeft = 0;
-    actualizarVisibilidadFlechas();
+
+    renderDots();
+    actualizarVisibilidadControles();
+    actualizarDotsActivos();
 }
 
-function actualizarVisibilidadFlechas() {
+/* Oculta TODA la barra de controles (flechas + dots) cuando el producto  */
+/* tiene una sola imagen, en vez de ocultar cada flecha por separado.     */
+/* Así se evita el espacio vacío reservado tanto en desktop como en       */
+/* mobile (requisito: "no dejar espacio vacío reservado para controles"). */
+function actualizarVisibilidadControles() {
     const hayVariasImagenes = listaImagenes.length > 1;
 
-    if (btnLeft) btnLeft.style.display = hayVariasImagenes ? "flex" : "none";
-    if (btnRight) btnRight.style.display = hayVariasImagenes ? "flex" : "none";
+    if (modalControls) modalControls.style.display = hayVariasImagenes ? "flex" : "none";
+}
+
+/* Genera un dot (button) por cada imagen del producto actual.           */
+/* Nunca hardcodea una cantidad: usa listaImagenes.length dinámicamente. */
+function renderDots() {
+    if (!modalDots) return;
+
+    modalDots.innerHTML = "";
+
+    if (listaImagenes.length <= 1) return;
+
+    listaImagenes.forEach((_, i) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.setAttribute("aria-label", `Ver imagen ${i + 1} de ${listaImagenes.length}`);
+
+        dot.addEventListener("click", (e) => {
+            e.stopPropagation();
+            imagenActual = i;
+            desplazarCarruselA(imagenActual);
+            actualizarDotsActivos();
+        });
+
+        modalDots.appendChild(dot);
+    });
+}
+
+/* Refleja imagenActual (el único índice real del carrusel) en el dot   */
+/* correspondiente. Se llama tras usar una flecha, hacer swipe manual,  */
+/* tocar un dot, o abrir el modal — nunca hay un índice aparte para los */
+/* dots que pueda desincronizarse del track.                            */
+function actualizarDotsActivos() {
+    if (!modalDots) return;
+
+    const dots = modalDots.querySelectorAll("button");
+    dots.forEach((dot, i) => {
+        dot.setAttribute("aria-current", i === imagenActual ? "true" : "false");
+    });
+}
+
+function prefiereMovimientoReducido() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function desplazarCarruselA(indice) {
     if (!modalTrack) return;
 
     const ancho = modalTrack.clientWidth;
-    modalTrack.scrollTo({ left: ancho * indice, behavior: "smooth" });
+    modalTrack.scrollTo({
+        left: ancho * indice,
+        behavior: prefiereMovimientoReducido() ? "auto" : "smooth"
+    });
 }
 
 /* BOTÓN AGREGAR DESDE MODAL */

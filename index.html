@@ -128,14 +128,24 @@
 
     <div class="modal__body">
 
-      <!-- 🔥 IMAGEN CONTROLADA -->
-      <div class="modal__image" id="modal-image">
-          <!-- 🔥 FLECHA IZQUIERDA (fija, no forma parte del track que hace scroll) -->
-       <button class="modal__arrow modal__arrow--left">&#10094;</button>
-        <!-- 🔥 Track desplazable: aquí se insertan las imágenes dinámicamente (js/app.js) -->
-        <div class="modal__track" id="modal-track"></div>
-         <!-- 🔥 FLECHA DERECHA (fija, no forma parte del track que hace scroll) -->
-       <button class="modal__arrow modal__arrow--right">&#10095;</button>
+      <!-- 🔥 CARRUSEL: imagen + controles envueltos juntos, para que la  -->
+      <!-- superposición de los controles en desktop se ancle exactamente -->
+      <!-- al área de la imagen y no a todo el modal.                     -->
+      <div class="modal__carousel">
+        <!-- 🔥 IMAGEN CONTROLADA -->
+        <div class="modal__image" id="modal-image">
+          <!-- 🔥 Track desplazable: aquí se insertan las imágenes dinámicamente (js/app.js) -->
+          <div class="modal__track" id="modal-track"></div>
+        </div>
+
+        <!-- 🔥 CONTROLES DEL CARRUSEL (flechas + dots) -->
+        <!-- Desktop: se posicionan superpuestos sobre la imagen (igual que antes). -->
+        <!-- Mobile/tablet pequeña (≤768px): quedan en una barra propia debajo. -->
+        <div class="modal__controls" id="modal-controls">
+          <button class="modal__arrow modal__arrow--left" aria-label="Imagen anterior">&#10094;</button>
+          <div class="modal__dots" id="modal-dots"></div>
+          <button class="modal__arrow modal__arrow--right" aria-label="Imagen siguiente">&#10095;</button>
+        </div>
       </div>
 
       <!-- 🔥 INFO -->

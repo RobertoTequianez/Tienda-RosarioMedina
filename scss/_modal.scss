@@ -34,7 +34,15 @@
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
   }
 
-  /* Contenedor visual fijo: las flechas viven aquí y NO se desplazan.
+  /* Envuelve imagen + controles. Es el ancla real de posicionamiento   */
+  /* para .modal__controls en desktop (position:absolute), en vez de   */
+  /* .modal__content completo — así los controles quedan superpuestos  */
+  /* exactamente sobre el área de la imagen, no sobre todo el modal.   */
+  &__carousel {
+    position: relative;
+  }
+
+  /* Contenedor visual fijo: la imagen no se desplaza.
      Solo .modal__track (adentro) hace scroll horizontal. */
   &__image {
     width: 100%;
@@ -85,12 +93,38 @@
     pointer-events: none;
   }
 
-  /* Flechas */
-  &__arrow {
+  /* Controles del carrusel (flechas + dots).
+     DESKTOP (por defecto / min-width 769px, ver media query abajo):
+       se posicionan superpuestos sobre la imagen, exactamente como
+       en la versión ya aprobada. Los dots quedan ocultos.
+     MOBILE/TABLET PEQUEÑA (≤768px): pasan a ser una barra propia,
+     en flujo normal, debajo de la imagen (ver media query abajo). */
+  &__controls {
     position: absolute;
     top: 50%;
+    left: 0;
+    right: 0;
     transform: translateY(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 10px;
+    box-sizing: border-box;
+
+    pointer-events: none; // el espacio entre flechas no bloquea la imagen
     z-index: 20;
+  }
+
+  /* En desktop no se muestran dots: solo las flechas superpuestas de siempre */
+  &__dots {
+    display: none;
+  }
+
+  /* Flechas — mismo tamaño/color/posición visual que la versión desktop aprobada */
+  &__arrow {
+    pointer-events: auto; // clicables aunque el contenedor sea pointer-events:none
 
     background: rgba(0,0,0,0.3);
     color: white;
@@ -111,17 +145,9 @@
     transition: all 0.2s ease;
   }
 
-  &__arrow--left {
-    left: 10px;
-  }
-
-  &__arrow--right {
-    right: 10px;
-  }
-
   &__arrow:hover {
     background: rgba(0,0,0,0.6);
-    transform: translateY(-50%) scale(1.1);
+    transform: scale(1.1);
   }
 
   /* Texto */
@@ -167,5 +193,117 @@
 
   &__close:hover {
     background: #ddd;
+  }
+}
+
+/* 🔥 MOBILE / TABLET PEQUEÑA — Feature 02.2
+   Únicamente estos breakpoints se ven afectados. Desktop (>768px)
+   no cambia: conserva las flechas superpuestas tal cual estaban. */
+@media (max-width: 768px) {
+  .modal {
+    /* Permite scroll vertical del modal si el contenido (imagen +
+       info + nueva barra de controles) no cabe en pantallas bajas. */
+    overflow-y: auto;
+    padding: 20px 0;
+
+    &__controls {
+      /* Deja de superponerse: pasa a flujo normal, debajo de la imagen */
+      position: static;
+      transform: none;
+
+      justify-content: center;
+      gap: 14px;
+
+      padding: 0;
+      margin-top: 8px;
+
+      min-height: 36px;
+
+      pointer-events: auto;
+    }
+
+    &__dots {
+      display: flex;
+      align-items: center;
+      gap: 2px; // el espacio real lo da el botón (área táctil), no el gap
+
+      button {
+        // botón con área táctil cómoda; el punto visual es más pequeño (::before)
+        width: 22px;
+        height: 22px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+
+        &::before {
+          content: "";
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #ccc; // dot normal: gris claro
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        &[aria-current="true"]::before {
+          background: $color-black; // dot activo: negro
+          transform: scale(1.15);
+        }
+      }
+    }
+
+    /* Flechas discretas: círculo sutil, fondo claro, icono oscuro */
+    &__arrow {
+      position: static;
+
+      width: 32px;
+      height: 32px;
+
+      background: rgba(0, 0, 0, 0.05);
+      color: $color-black;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+
+      font-size: 13px;
+
+      box-shadow: none;
+    }
+
+    &__arrow:hover,
+    &__arrow:active {
+      background: rgba(0, 0, 0, 0.1);
+      transform: none; // sin scale: es touch, no hover real
+    }
+  }
+}
+
+/* Respeta prefers-reduced-motion: quita transiciones/escalados
+   no esenciales de flechas y dots. El carrusel sigue siendo
+   100% funcional (swipe, flechas y dots sin animación). */
+@media (prefers-reduced-motion: reduce) {
+  .modal {
+    &__arrow {
+      transition: none;
+    }
+
+    &__arrow:hover {
+      transform: none;
+    }
+
+    &__dots button::before {
+      transition: none;
+    }
+
+    &__dots button[aria-current="true"]::before {
+      transform: none;
+    }
+
+    &__track {
+      scroll-behavior: auto;
+    }
   }
 }
