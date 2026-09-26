@@ -8,7 +8,24 @@
   background: rgba(0,0,0,0.6);
 
   display: none;
-  justify-content: center;
+
+  // 🔥 Feature 02.7: centrado "seguro". Antes era
+  // "justify-content:center; align-items:center;" con flex-direction
+  // row — con overflow-y:auto eso centra el contenido SIN dejarlo
+  // alcanzable por scroll cuando es más alto que el viewport (el
+  // exceso queda repartido arriba y abajo, y el tope del scroll no
+  // llega a mostrar el borde superior real del contenido). Con la
+  // ficha de producto (Feature 02.7) el modal puede superar la altura
+  // del viewport con más frecuencia que antes (pantallas de escritorio
+  // comunes incluidas), así que este caso pasa a ser normal, no la
+  // excepción.
+  // Fix: flex-direction:column + align-items:center (centra horizontal,
+  // eje transversal) y margin:auto en .modal__content (centra vertical
+  // vía márgenes, eje principal). Los márgenes automáticos SÍ respetan
+  // el scroll: cuando el contenido es más alto que el contenedor, se
+  // reducen a 0 en vez de "esconder" contenido, y el scroll llega
+  // normalmente hasta el borde superior real.
+  flex-direction: column;
   align-items: center;
 
   z-index: 3000;
@@ -46,6 +63,12 @@
     position: relative;
 
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+
+    // Centrado vertical "seguro" dentro de .modal (ver comentario arriba,
+    // en la regla .modal): márgenes automáticos en vez de align-items
+    // center, para que el contenido siga siendo 100% alcanzable por
+    // scroll cuando es más alto que el viewport.
+    margin: auto 0;
   }
 
   /* Envuelve imagen + controles. */
@@ -208,16 +231,172 @@
     font-weight: 700;
   }
 
+  /* 🔥 Feature 02.7 (ajuste fino de ritmo vertical): "Precio:" + importe
+     en UNA SOLA LÍNEA (antes: etiqueta y valor apilados en dos líneas,
+     lo que por sí solo duplicaba la altura de este bloque y era la causa
+     principal de la sensación de fragmentación — ver comentario en la
+     regla &__info-block-rhythm más abajo). Misma jerarquía visual que
+     antes: etiqueta secundaria (tamaño menor, peso normal/medium, color
+     apagado) + valor con más peso (semibold, color principal), ahora
+     lado a lado con alineación "baseline" para que ambos textos, de
+     tamaños distintos, se vean asentados sobre la misma línea. */
+  &__price-block {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  &__price-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #777;
+  }
+
   &__price {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
-    margin-top: 5px;
+    color: $color-black;
   }
 
   &__description {
     font-size: 14px;
     color: #777;
-    margin-top: 5px;
+    margin-top: 10px;
+  }
+
+  /* 🔥 Feature 02.7 (ajuste fino de ritmo vertical) — RESUMEN DEL RITMO
+     entre nombre/precio/descripción/"Más información"/selector/AGREGAR
+     (cada valor vive junto a su propia regla, este comentario es el
+     mapa completo para no perder de vista el conjunto):
+       nombre            (&__title, sin margen propio)
+         ↓ 8px           &__price-block  margin-top
+       Precio: $999 MXN
+         ↓ 10px          &__description  margin-top
+       descripción corta
+         ↓ 16px          &__more         margin-top (más abajo)
+       Más información ›
+         ↓ 14px          &__qty          margin (más abajo)
+       [ − ] 1 [ + ]
+         ↓ 16px          &__qty          margin (mismo valor, ya existía)
+       AGREGAR
+     Antes, el precio ocupaba DOS líneas (etiqueta arriba, valor abajo)
+     y cada margen se había ido ajustando por separado sin un criterio
+     conjunto — el resultado se sentía como una sucesión de elementos
+     sueltos en vez de grupos relacionados. Con el precio en una sola
+     línea y estos márgenes coordinados, el bloque se lee como dos
+     grupos: (nombre + precio + descripción) muy próximos entre sí, y
+     luego (Más información → selector → AGREGAR) con algo más de aire,
+     porque son la zona de decisión/acción. */
+
+  /* 🔥 Feature 02.7: fila etiqueta/valor reutilizada tanto por el bloque
+     de Precio como por el panel "Más información" (&__more-panel, más
+     abajo). Deliberadamente NO es una tabla: cada par etiqueta/valor es
+     un pequeño bloque propio, apilado — se siente como información para
+     el comprador, no como un formulario administrativo. */
+  &__spec {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__spec-label {
+    // Etiqueta con mayor peso visual que el valor (spec §4).
+    font-size: 13px;
+    font-weight: 700;
+    color: $color-black;
+  }
+
+  &__spec-value {
+    // Valor con peso normal, tono más suave que la etiqueta.
+    font-size: 14px;
+    font-weight: 400;
+    color: #555;
+    line-height: 1.45;
+
+    // Especificaciones de textos más largos (medidas, cuidados) no deben
+    // desbordar horizontalmente el modal en pantallas angostas.
+    overflow-wrap: break-word;
+  }
+
+  /* 🔥 Feature 02.7 (ajuste UX) — sección expandible "Más información".
+     Agrupa lo secundario (cuidados, detalles adicionales, descripción
+     completa) fuera del flujo siempre-visible, para que el modal cerrado
+     sea compacto — sobre todo relevante en mobile, donde el selector de
+     cantidad y AGREGAR deben quedar accesibles sin scroll excesivo.
+     Oculto por completo (display:none, vía JS) cuando el producto no
+     tiene ningún contenido expandible. */
+  &__more {
+    // 🔥 Ajuste fino de ritmo vertical: 12px → 16px. Ver el mapa de
+    // ritmo completo junto a &__price-block, más arriba.
+    margin-top: 16px;
+  }
+
+  /* Botón real (no un div clickeable): se resetean los estilos por
+     defecto de <button> para que se vea como una ACCIÓN SECUNDARIA —
+     texto pequeño, sin fondo ni borde pesado — nunca como un botón
+     principal (eso ya lo es AGREGAR). */
+  &__more-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    padding: 4px 0;
+    border: none;
+    background: transparent;
+    color: #555;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: $color-black;
+    }
+
+    // Foco visible para navegación por teclado (accesibilidad), sin
+    // agregar un borde pesado permanente.
+    &:focus-visible {
+      outline: 2px solid rgba(0, 0, 0, 0.35);
+      outline-offset: 2px;
+    }
+  }
+
+  &__more-chevron {
+    // Mismo glosario visual que "Más información >" / "Más información v"
+    // del mockup: se logra rotando el mismo carácter "›" con CSS — sin
+    // iconos externos ni librerías. Transición sutil, respetada por
+    // prefers-reduced-motion más abajo.
+    display: inline-block;
+    font-size: 15px;
+    line-height: 1;
+    transition: transform 0.15s ease;
+  }
+
+  // aria-expanded="true" es la única fuente de verdad del estado (ver
+  // js/app.js: expandirMasInformacion/colapsarMasInformacion) — el CSS
+  // solo lee ese atributo, nunca una clase paralela que pueda
+  // desincronizarse.
+  &__more-toggle[aria-expanded="true"] &__more-chevron {
+    transform: rotate(90deg);
+  }
+
+  &__more-panel {
+    margin-top: 10px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px; // compacto pero legible, mismo criterio que &__spec/&__price-block
+
+    // [hidden] ya lo oculta (display:none nativo del atributo HTML);
+    // esta regla es solo un resguardo explícito por si algún estilo
+    // externo llegara a pisar el display del contenedor.
+    &[hidden] {
+      display: none;
+    }
   }
 
   /* 🔥 Feature 02.6: selector de cantidad. Compacto y centrado, mismo
@@ -233,7 +412,10 @@
 
     // 🔥 Ajuste visual: separación clara hacia el botón AGREGAR (antes
     // quedaban casi pegados, sin margin-bottom). Universal, no solo mobile.
-    margin: 4px auto 16px;
+    // 🔥 Ajuste fino de ritmo vertical: margen superior 4px → 14px (más
+    // aire respecto a "Más información" — ver mapa de ritmo junto a
+    // &__price-block). El margen inferior (16px) no cambia.
+    margin: 14px auto 16px;
   }
 
   &__qty-btn {
@@ -382,6 +564,13 @@
 
     &__track {
       scroll-behavior: auto;
+    }
+
+    // 🔥 Feature 02.7 (ajuste UX): el chevron de "Más información" solo
+    // rota (no es esencial), se quita igual que el resto de transiciones
+    // no esenciales de esta sección.
+    &__more-chevron {
+      transition: none;
     }
   }
 }

@@ -151,8 +151,47 @@
       <!-- 🔥 INFO -->
       <div class="modal__info">
         <h2 id="modal-title" class="modal__title"></h2>
-        <p id="modal-price" class="modal__price"></p>
+
+        <!-- 🔥 Feature 02.7 (ajuste fino de ritmo vertical): "Precio:" y el
+             importe en una sola línea (antes apilados en dos), misma
+             jerarquía visual (etiqueta secundaria + valor con más peso).
+             Solo cambia presentación — el valor numérico real del
+             producto (producto.precio) no se modifica, formatearPrecioMXN()
+             no cambia, y no interviene en ningún cálculo de
+             carrito/subtotal/total. -->
+        <p class="modal__price-block">
+          <span class="modal__price-label">Precio:</span>
+          <span id="modal-price" class="modal__price"></span>
+        </p>
+
         <p id="modal-description" class="modal__description"></p>
+
+        <!-- 🔥 Feature 02.7 (ajuste de jerarquía): sección expandible
+             "Más información" (Material, Medidas, Cuidados, detalles
+             adicionales, descripción completa — TODA la ficha técnica
+             queda aquí, nada de esto se muestra en la vista inicial).
+             Botón real (no un div clickeable) para que funcione con
+             mouse, touch y teclado; aria-expanded refleja el estado y
+             aria-controls apunta al panel. El panel se completa
+             ÍNTEGRAMENTE desde JS (js/app.js: renderMasInformacion)
+             mediante textContent/createElement. Todo el bloque queda
+             oculto (display:none) cuando el producto no tiene ningún
+             contenido expandible, y el panel siempre arranca oculto/
+             colapsado (hidden) al abrir el modal, sin importar cómo haya
+             quedado la vez anterior. -->
+        <div id="modal-more-wrap" class="modal__more">
+          <button
+            type="button"
+            id="modal-more-toggle"
+            class="modal__more-toggle"
+            aria-expanded="false"
+            aria-controls="modal-more-panel"
+          >
+            <span class="modal__more-text">Más información</span>
+            <span class="modal__more-chevron" aria-hidden="true">&rsaquo;</span>
+          </button>
+          <div id="modal-more-panel" class="modal__more-panel" hidden></div>
+        </div>
 
         <!-- 🔥 Feature 02.6: selector de cantidad. Oculto (display:none vía JS)
              cuando el producto está agotado — no tiene sentido elegir cantidad

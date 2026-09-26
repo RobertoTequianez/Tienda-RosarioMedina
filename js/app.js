@@ -37,6 +37,16 @@ let modalQtyPlus;
 let modalQtyValue;
 let cantidadSeleccionadaModal = 1; // cantidad a agregar cuando se presiona AGREGAR desde el modal
 
+// SECCIÓN EXPANDIBLE "MÁS INFORMACIÓN" (Feature 02.7 — ajuste de jerarquía)
+// Agrupa TODA la ficha técnica (Material, Medidas, Cuidados, detalles
+// adicionales, descripción completa) — nada de esto se muestra en la
+// vista inicial, solo nombre/precio/descripción corta. Arranca colapsada
+// en cada apertura del modal (ver abrirModal → renderMasInformacion →
+// colapsarMasInformacion).
+let modalMoreWrap; // #modal-more-wrap: contenedor completo (botón + panel), oculto si no hay nada que expandir
+let modalMoreToggle; // #modal-more-toggle: <button> real, controla aria-expanded
+let modalMorePanel; // #modal-more-panel: panel colapsable (atributo "hidden")
+
 document.addEventListener("DOMContentLoaded", () => {
     modal = document.getElementById("product-modal");
     modalTrack = document.getElementById("modal-track");
@@ -53,6 +63,9 @@ document.addEventListener("DOMContentLoaded", () => {
     modalQtyMinus = document.getElementById("modal-qty-minus");
     modalQtyPlus = document.getElementById("modal-qty-plus");
     modalQtyValue = document.getElementById("modal-qty-value");
+    modalMoreWrap = document.getElementById("modal-more-wrap");
+    modalMoreToggle = document.getElementById("modal-more-toggle");
+    modalMorePanel = document.getElementById("modal-more-panel");
 
     if (btnLeft && btnRight) {
         btnLeft.addEventListener("click", (e) => {
@@ -154,6 +167,24 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // 🔥 Feature 02.7 (ajuste UX): toggle de "Más información". Al ser un
+    // <button> real, el navegador ya dispara "click" con mouse, touch y
+    // teclado (Enter/Espacio) sin código adicional — no hace falta un
+    // listener de teclado aparte. Un único handler alterna el estado;
+    // colapsarMasInformacion()/expandirMasInformacion() son las únicas
+    // funciones que tocan aria-expanded/hidden, para que nunca queden
+    // desincronizados entre sí.
+    if (modalMoreToggle) {
+        modalMoreToggle.addEventListener("click", () => {
+            const expandido = modalMoreToggle.getAttribute("aria-expanded") === "true";
+            if (expandido) {
+                colapsarMasInformacion();
+            } else {
+                expandirMasInformacion();
+            }
+        });
+    }
+
     renderProductos();
     activarFiltros();
 
@@ -218,8 +249,17 @@ function abrirModal(producto) {
     renderCarruselModal(producto.nombre);
 
     modalTitle.textContent = producto.nombre;
-    modalPrice.textContent = `$${producto.precio}`;
-    modalDesc.textContent = producto.descripcion || "Producto premium.";
+    modalPrice.textContent = formatearPrecioMXN(producto.precio); // ver formatearPrecioMXN: solo presentación
+
+    // 🔥 Feature 02.7: ficha informativa. renderDescripcionesModal muestra
+    // la descripción corta (siempre visible). renderMasInformacion arma
+    // el panel expandible completo (Material, Medidas, Cuidados, detalles
+    // adicionales, descripción completa — TODA la ficha técnica vive ahí
+    // ahora, nada se muestra en la vista inicial) y lo deja SIEMPRE
+    // colapsado al abrir — nunca arrastra el estado "abierto" de una
+    // apertura previa, sea del mismo producto o de otro.
+    renderDescripcionesModal(producto);
+    renderMasInformacion(producto);
 
     // 🔥 Feature 02.6: estado de stock/cantidad, siempre reseteado al abrir
     // (nunca debe arrastrar el "AGREGADO ✓"/cantidad de una apertura previa,
@@ -290,6 +330,171 @@ function actualizarSelectorCantidadModal() {
         // stock/límite al intentar pasarse.
         modalQtyPlus.setAttribute("aria-label", `Aumentar cantidad de ${productoSeleccionado.nombre}`);
     }
+}
+
+/* 🔥 Feature 02.7 (ajuste de jerarquía) — FORMATO DE PRECIO ("$999 MXN").
+   Cambio ÚNICAMENTE de presentación: producto.precio (el valor numérico
+   real) nunca se modifica ni se recalcula aquí — esta función solo
+   decide cómo se escribe en pantalla. No participa en ningún cálculo de
+   carrito/subtotal/total (esos siguen leyendo producto.precio tal cual,
+   en js/carrito.js).
+   Formato: separador de miles, sin decimales si el precio es un entero
+   (ej. $999 MXN, $1,299 MXN), con 2 decimales si no lo es (ej.
+   $999.50 MXN) — preparado para si en el futuro el precio trae centavos. */
+function formatearPrecioMXN(precio) {
+    const numero = Number(precio);
+
+    // Resguardo: si por algún motivo el valor no es un número válido,
+    // se muestra tal cual llegó en vez de romper el modal.
+    if (!Number.isFinite(numero)) return `$${precio} MXN`;
+
+    const formateado = numero.toLocaleString("es-MX", {
+        minimumFractionDigits: Number.isInteger(numero) ? 0 : 2,
+        maximumFractionDigits: 2
+    });
+
+    return `$${formateado} MXN`;
+}
+
+/* 🔥 Feature 02.7 — DESCRIPCIÓN CORTA.
+   "corta" = producto.descripcionCorta, o si no existe, producto.descripcion
+   (así un producto que solo tenga "descripcion" no se queda sin texto
+   visible). La descripción COMPLETA ya no vive aquí: desde el ajuste UX
+   se muestra dentro del panel "Más información" (ver renderMasInformacion),
+   solo cuando aporta algo distinto a esta corta.
+   Si el producto no tiene ningún campo de descripción, el bloque queda
+   oculto (display:none): no se renderiza un párrafo vacío ni un
+   placeholder genérico — campo ausente, no se muestra (spec §2). */
+function renderDescripcionesModal(producto) {
+    if (!modalDesc) return;
+
+    const corta = producto.descripcionCorta || producto.descripcion || null;
+
+    if (corta) {
+        modalDesc.textContent = corta; // seguro: textContent, nunca innerHTML
+        modalDesc.style.display = "";
+    } else {
+        modalDesc.textContent = "";
+        modalDesc.style.display = "none";
+    }
+}
+
+/* 🔥 Feature 02.7 (ajuste de jerarquía) — SECCIÓN EXPANDIBLE
+   "MÁS INFORMACIÓN". Desde este ajuste contiene TODA la ficha técnica
+   (nada de esto se muestra en la vista inicial del modal, que se limita
+   a nombre/precio/descripción corta): Material, Medidas, Cuidados, cada
+   entrada de producto.detalles (especificaciones variables — distintas
+   categorías de producto necesitarán propiedades distintas, por eso NO
+   hay campos fijos para cada característica posible, spec Feature 02.7
+   §7) y, al final, la descripción completa (bajo la etiqueta
+   "Descripción"), SOLO si existe y es distinta de la corta ya visible
+   arriba — nunca se duplica la misma información dos veces. El orden es
+   siempre el mismo, salteando lo que no exista: Material, Medidas,
+   Cuidados, detalles adicionales, descripción completa.
+
+   Si no hay NINGÚN contenido para el panel (ni material, ni medidas, ni
+   cuidados, ni detalles, ni descripción completa distinta), todo el
+   bloque (botón + panel) queda oculto (display:none): nunca se muestra
+   "Más información" vacío. Cuando sí hay contenido, el panel se
+   reconstruye y queda SIEMPRE colapsado (colapsarMasInformacion) — el
+   estado abierto/cerrado nunca sobrevive entre una apertura del modal y
+   la siguiente.
+
+   Seguridad de renderizado (spec §8/§10, sin cambios): todo el contenido
+   viene de createElement + textContent, nunca de innerHTML con datos del
+   producto. */
+function renderMasInformacion(producto) {
+    if (!modalMoreWrap || !modalMorePanel || !modalMoreToggle) return;
+
+    modalMorePanel.innerHTML = ""; // limpieza del contenedor: no inserta datos del producto
+
+    const items = [];
+
+    if (producto.material) items.push({ etiqueta: "Material", valor: producto.material });
+    if (producto.medidas) items.push({ etiqueta: "Medidas", valor: producto.medidas });
+    if (producto.cuidados) items.push({ etiqueta: "Cuidados", valor: producto.cuidados });
+
+    if (Array.isArray(producto.detalles)) {
+        producto.detalles.forEach((detalle) => {
+            if (!detalle) return;
+
+            const etiqueta = detalle.etiqueta;
+            const valor = detalle.valor;
+
+            // Descarta entradas incompletas: nunca una etiqueta huérfana
+            // (sin valor) ni un valor sin etiqueta.
+            const valorValido = valor !== undefined && valor !== null && String(valor).trim() !== "";
+            const etiquetaValida = typeof etiqueta === "string" && etiqueta.trim() !== "";
+
+            if (etiquetaValida && valorValido) {
+                items.push({ etiqueta, valor: String(valor) });
+            }
+        });
+    }
+
+    const corta = producto.descripcionCorta || producto.descripcion || null;
+    const completa = producto.descripcion || null;
+    const mostrarCompleta = Boolean(completa) && completa !== corta;
+    if (mostrarCompleta) {
+        items.push({ etiqueta: "Descripción", valor: completa });
+    }
+
+    if (items.length === 0) {
+        modalMoreWrap.style.display = "none";
+        return;
+    }
+
+    modalMoreWrap.style.display = "";
+    items.forEach((item) => {
+        modalMorePanel.appendChild(crearFilaSpec(item.etiqueta, item.valor));
+    });
+
+    // Cada vez que se (re)construye el panel (es decir, cada vez que se
+    // abre un producto) arranca colapsado, sin importar cómo haya
+    // quedado la vez anterior (spec: "debe iniciar cerrada cada vez que
+    // se abra un producto").
+    colapsarMasInformacion();
+}
+
+/* Únicas dos funciones que tocan el estado abierto/cerrado del panel:
+   mantienen aria-expanded (accesibilidad) y el atributo hidden (oculta
+   de verdad el panel, tanto visual como para lectores de pantalla)
+   siempre sincronizados entre sí — nunca se modifican por separado en
+   otro lugar del código. */
+function colapsarMasInformacion() {
+    if (!modalMoreToggle || !modalMorePanel) return;
+    modalMoreToggle.setAttribute("aria-expanded", "false");
+    modalMorePanel.hidden = true;
+    modalMoreToggle.classList.remove("is-open");
+}
+
+function expandirMasInformacion() {
+    if (!modalMoreToggle || !modalMorePanel) return;
+    modalMoreToggle.setAttribute("aria-expanded", "true");
+    modalMorePanel.hidden = false;
+    modalMoreToggle.classList.add("is-open");
+}
+
+/* Crea una fila etiqueta/valor de la ficha (formato "ficha", no tabla):
+   la etiqueta con más peso visual arriba, el valor con peso normal
+   debajo. Ambos se asignan vía textContent — nunca vía innerHTML —
+   porque etiqueta/valor pueden venir de datos de producto (spec §8). */
+function crearFilaSpec(etiqueta, valor) {
+    const fila = document.createElement("div");
+    fila.className = "modal__spec";
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "modal__spec-label";
+    labelEl.textContent = etiqueta;
+
+    const valueEl = document.createElement("span");
+    valueEl.className = "modal__spec-value";
+    valueEl.textContent = valor;
+
+    fila.appendChild(labelEl);
+    fila.appendChild(valueEl);
+
+    return fila;
 }
 
 // Punto único de cierre. TODOS los caminos que cierran el modal (botón X,

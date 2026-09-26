@@ -490,7 +490,7 @@ body.scroll-lock {
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   display: none;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
   z-index: 3000;
   overscroll-behavior: contain;
@@ -511,6 +511,7 @@ body.scroll-lock {
   gap: 15px;
   position: relative;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  margin: auto 0;
 }
 .modal {
   /* Envuelve imagen + controles. */
@@ -648,15 +649,140 @@ body.scroll-lock {
   font-size: 20px;
   font-weight: 700;
 }
+.modal {
+  /* 🔥 Feature 02.7 (ajuste fino de ritmo vertical): "Precio:" + importe
+     en UNA SOLA LÍNEA (antes: etiqueta y valor apilados en dos líneas,
+     lo que por sí solo duplicaba la altura de este bloque y era la causa
+     principal de la sensación de fragmentación — ver comentario en la
+     regla &__info-block-rhythm más abajo). Misma jerarquía visual que
+     antes: etiqueta secundaria (tamaño menor, peso normal/medium, color
+     apagado) + valor con más peso (semibold, color principal), ahora
+     lado a lado con alineación "baseline" para que ambos textos, de
+     tamaños distintos, se vean asentados sobre la misma línea. */
+}
+.modal__price-block {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+}
+.modal__price-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #777;
+}
 .modal__price {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
-  margin-top: 5px;
+  color: #111;
 }
 .modal__description {
   font-size: 14px;
   color: #777;
-  margin-top: 5px;
+  margin-top: 10px;
+}
+.modal {
+  /* 🔥 Feature 02.7 (ajuste fino de ritmo vertical) — RESUMEN DEL RITMO
+     entre nombre/precio/descripción/"Más información"/selector/AGREGAR
+     (cada valor vive junto a su propia regla, este comentario es el
+     mapa completo para no perder de vista el conjunto):
+       nombre            (&__title, sin margen propio)
+         ↓ 8px           &__price-block  margin-top
+       Precio: $999 MXN
+         ↓ 10px          &__description  margin-top
+       descripción corta
+         ↓ 16px          &__more         margin-top (más abajo)
+       Más información ›
+         ↓ 14px          &__qty          margin (más abajo)
+       [ − ] 1 [ + ]
+         ↓ 16px          &__qty          margin (mismo valor, ya existía)
+       AGREGAR
+     Antes, el precio ocupaba DOS líneas (etiqueta arriba, valor abajo)
+     y cada margen se había ido ajustando por separado sin un criterio
+     conjunto — el resultado se sentía como una sucesión de elementos
+     sueltos en vez de grupos relacionados. Con el precio en una sola
+     línea y estos márgenes coordinados, el bloque se lee como dos
+     grupos: (nombre + precio + descripción) muy próximos entre sí, y
+     luego (Más información → selector → AGREGAR) con algo más de aire,
+     porque son la zona de decisión/acción. */
+  /* 🔥 Feature 02.7: fila etiqueta/valor reutilizada tanto por el bloque
+     de Precio como por el panel "Más información" (&__more-panel, más
+     abajo). Deliberadamente NO es una tabla: cada par etiqueta/valor es
+     un pequeño bloque propio, apilado — se siente como información para
+     el comprador, no como un formulario administrativo. */
+}
+.modal__spec {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.modal__spec-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+}
+.modal__spec-value {
+  font-size: 14px;
+  font-weight: 400;
+  color: #555;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+.modal {
+  /* 🔥 Feature 02.7 (ajuste UX) — sección expandible "Más información".
+     Agrupa lo secundario (cuidados, detalles adicionales, descripción
+     completa) fuera del flujo siempre-visible, para que el modal cerrado
+     sea compacto — sobre todo relevante en mobile, donde el selector de
+     cantidad y AGREGAR deben quedar accesibles sin scroll excesivo.
+     Oculto por completo (display:none, vía JS) cuando el producto no
+     tiene ningún contenido expandible. */
+}
+.modal__more {
+  margin-top: 16px;
+}
+.modal {
+  /* Botón real (no un div clickeable): se resetean los estilos por
+     defecto de <button> para que se vea como una ACCIÓN SECUNDARIA —
+     texto pequeño, sin fondo ni borde pesado — nunca como un botón
+     principal (eso ya lo es AGREGAR). */
+}
+.modal__more-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.modal__more-toggle:hover, .modal__more-toggle:focus-visible {
+  color: #111;
+}
+.modal__more-toggle:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.35);
+  outline-offset: 2px;
+}
+.modal__more-chevron {
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+.modal__more-toggle[aria-expanded=true] .modal__more-chevron {
+  transform: rotate(90deg);
+}
+.modal__more-panel {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modal__more-panel[hidden] {
+  display: none;
 }
 .modal {
   /* 🔥 Feature 02.6: selector de cantidad. Compacto y centrado, mismo
@@ -670,7 +796,7 @@ body.scroll-lock {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  margin: 4px auto 16px;
+  margin: 14px auto 16px;
 }
 .modal__qty-btn {
   width: 36px;
@@ -788,6 +914,9 @@ body.scroll-lock {
   }
   .modal__track {
     scroll-behavior: auto;
+  }
+  .modal__more-chevron {
+    transition: none;
   }
 }
 /* 🔥 TOAST — feedback visual al agregar al carrito */
