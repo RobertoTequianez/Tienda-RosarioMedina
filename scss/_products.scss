@@ -108,6 +108,18 @@
     margin-bottom: 5px;
   }
 
+  /* 🔥 Feature 03 (accesibilidad, Section 14): botón real (nativo) anidado
+     en el <h3> del título, para que el detalle del producto pueda abrirse
+     solo con teclado (TAB + Enter/Espacio). Reseteado con "all: unset"
+     para que sea visualmente INVISIBLE frente al texto plano anterior —
+     mismo tamaño/peso/color heredados del <h3>, sin bordes ni fondo. */
+  &__title-btn {
+    all: unset;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+
   &__price {
     font-size: 18px;
     font-weight: 600;
@@ -126,7 +138,6 @@
     margin-top: auto;
 
     -webkit-tap-highlight-color: transparent;
-    outline: none;
 
     transition: all 0.25s ease;
 

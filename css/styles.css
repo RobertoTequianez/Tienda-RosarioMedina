@@ -41,6 +41,26 @@ body.scroll-lock {
   overflow: hidden;
 }
 
+/* 🔥 Feature 03 (accesibilidad, Section 17) — FOCO VISIBLE GLOBAL.
+   Regla de respaldo para TODO elemento interactivo nativo: garantiza que
+   quien navega con teclado siempre vea con claridad dónde está el foco,
+   sin depender de que cada componente defina su propia regla. Usa
+   :focus-visible (no aparece con clic de mouse/touch, solo con teclado),
+   así queda "prácticamente invisible" para quien usa mouse/touch, tal
+   como pide la Feature. Mismo estilo que ya existía en .modal__more-toggle
+   (Feature 02.7), aquí generalizado. Nunca quita un outline sin
+   reemplazo: donde un componente necesitaba "outline: none" (botón de
+   producto) se quitó esa línea para que esta regla pueda aplicarse. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.35);
+  outline-offset: 2px;
+}
+
 .header {
   position: fixed;
   top: 0;
@@ -257,6 +277,19 @@ body.scroll-lock {
   font-weight: 500;
   margin-bottom: 5px;
 }
+.product-card {
+  /* 🔥 Feature 03 (accesibilidad, Section 14): botón real (nativo) anidado
+     en el <h3> del título, para que el detalle del producto pueda abrirse
+     solo con teclado (TAB + Enter/Espacio). Reseteado con "all: unset"
+     para que sea visualmente INVISIBLE frente al texto plano anterior —
+     mismo tamaño/peso/color heredados del <h3>, sin bordes ni fondo. */
+}
+.product-card__title-btn {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
 .product-card__price {
   font-size: 18px;
   font-weight: 600;
@@ -272,7 +305,6 @@ body.scroll-lock {
   letter-spacing: 1px;
   margin-top: auto;
   -webkit-tap-highlight-color: transparent;
-  outline: none;
   transition: all 0.25s ease;
 }
 @media (hover: hover) {

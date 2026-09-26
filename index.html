@@ -102,7 +102,7 @@
 
   <div class="cart-panel__header">
     <h3>Carrito</h3>
-    <button id="close-cart">X</button>
+    <button id="close-cart" aria-label="Cerrar carrito">X</button>
   </div>
 
   <div id="cart-items" class="cart-panel__items"></div>
@@ -120,11 +120,20 @@
 </footer>
 
 <!-- 🔥 MODAL PRODUCTO (MEJORADO) -->
+<!-- Feature 03 (accesibilidad): role="dialog"/aria-modal/aria-labelledby
+     van en .modal__content (el cuadro de diálogo real), no en el overlay
+     exterior (#product-modal), que solo es el fondo/click-fuera-para-cerrar
+     y no forma parte del diálogo en sí. aria-labelledby apunta al <h2>
+     con el nombre real del producto (#modal-title); aria-describedby
+     apunta a la descripción corta ya visible (#modal-description). -->
+<!-- aria-describedby se agrega/quita dinámicamente desde JS
+     (renderDescripcionesModal, js/app.js) según si el producto actual
+     tiene descripción corta — nunca queda apuntando a un nodo vacío. -->
 <div id="product-modal" class="modal">
-  <div class="modal__content">
+  <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
 
     <!-- 🔥 BOTÓN CERRAR -->
-    <button id="close-modal" class="modal__close">&times;</button>
+    <button id="close-modal" class="modal__close" aria-label="Cerrar detalle del producto">&times;</button>
 
     <div class="modal__body">
 

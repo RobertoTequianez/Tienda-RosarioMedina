@@ -9,11 +9,21 @@ let listaImagenes = [];
 
 // MODAL
 let modal;
+let modalContent; // .modal__content: cuadro de diálogo real (role="dialog"), límite del focus trap
 let modalTrack; // .modal__track: único elemento que hace scroll (carrusel DOM real)
 let modalTitle;
 let modalPrice;
 let modalDesc;
 let closeModal;
+
+// ACCESIBILIDAD DEL MODAL (Feature 03)
+// elementoOrigenModal: elemento que tenía el foco antes de abrir el modal
+// (card/botón que lo disparó), para devolver el foco ahí al cerrar (§6).
+// elementosInertados: elementos del fondo a los que se les aplicó "inert"
+// (o su alternativa) mientras el modal está abierto, para poder revertirlo
+// exactamente al cerrar (§7).
+let elementoOrigenModal = null;
+let elementosInertados = [];
 
 // BOTÓN MODAL
 let modalBtn;
@@ -49,6 +59,7 @@ let modalMorePanel; // #modal-more-panel: panel colapsable (atributo "hidden")
 
 document.addEventListener("DOMContentLoaded", () => {
     modal = document.getElementById("product-modal");
+    modalContent = modal ? modal.querySelector(".modal__content") : null;
     modalTrack = document.getElementById("modal-track");
     modalTitle = document.getElementById("modal-title");
     modalPrice = document.getElementById("modal-price");
@@ -167,6 +178,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // 🔥 Feature 03 (accesibilidad): Escape y focus trap (Tab/Shift+Tab).
+    // Un único listener, siempre activo, que revisa si el modal está
+    // realmente abierto antes de actuar — así no hace falta agregar y
+    // quitar el listener en cada apertura/cierre. Escape reutiliza
+    // cerrarModal() (el mismo punto único de cierre que el botón X y el
+    // clic fuera): "NO duplicar lógica de cierre".
+    if (modal) {
+        modal.addEventListener("keydown", manejarTeclasModal);
+    }
+
     // 🔥 Feature 02.7 (ajuste UX): toggle de "Más información". Al ser un
     // <button> real, el navegador ya dispara "click" con mouse, touch y
     // teclado (Enter/Espacio) sin código adicional — no hace falta un
@@ -208,7 +229,7 @@ function crearCard(producto) {
         </div>
 
         <div class="product-card__info">
-            <h3 class="product-card__title">${producto.nombre}</h3>
+            <h3 class="product-card__title"><button type="button" class="product-card__title-btn">${producto.nombre}</button></h3>
             <p class="product-card__price">$${producto.precio}</p>
 
             <button class="product-card__btn"${agotado ? " disabled" : ""}>${agotado ? "AGOTADO" : "AGREGAR"}</button>
@@ -216,16 +237,36 @@ function crearCard(producto) {
     `;
 
     const btn = card.querySelector(".product-card__btn");
+    const tituloBtn = card.querySelector(".product-card__title-btn");
 
     btn.addEventListener("click", (e) => {
         e.stopPropagation();
         agregarAlCarrito(producto, btn);
     });
 
+    // 🔥 Feature 03 (accesibilidad, Section 14): botón real (nativo, no un
+    // div con role="button") anidado en el <h3> del título, para que un
+    // usuario que navega solo con teclado (TAB + Enter/Espacio) pueda
+    // abrir el detalle del producto — antes la card completa (un <div>)
+    // no era focoseable ni operable por teclado. Válido en HTML5: un
+    // encabezado admite "phrasing content" y este botón solo contiene
+    // texto; queda SIEMPRE hermano del botón AGREGAR, nunca anidado
+    // dentro de él (no se permiten botones anidados). e.stopPropagation()
+    // evita que el listener de la card (abajo) dispare una segunda
+    // apertura del mismo modal para el mismo clic.
+    if (tituloBtn) {
+        tituloBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            abrirModal(producto, tituloBtn);
+        });
+    }
+
     // El producto agotado sigue siendo visible y se puede abrir su modal
     // (para informar al usuario) — solo el botón AGREGAR queda bloqueado.
+    // Cubre el resto del área de la card (imagen, precio, espacio en
+    // blanco) para mouse/touch, exactamente como antes.
     card.addEventListener("click", () => {
-        abrirModal(producto);
+        abrirModal(producto, card);
     });
 
     return card;
@@ -235,8 +276,15 @@ function crearCard(producto) {
 // Punto único de apertura. Cualquier código nuevo que deba ejecutarse al
 // abrir el modal (incluido el bloqueo de scroll del fondo) se agrega aquí,
 // nunca en un caller individual.
-function abrirModal(producto) {
+// "origen" (Feature 03, accesibilidad §3/§6): el elemento que disparó esta
+// apertura (card/botón de título), para poder devolverle el foco al
+// cerrar. Si no se pasa explícitamente, se usa el elemento con foco actual
+// como resguardo.
+function abrirModal(producto, origen) {
+    elementoOrigenModal = origen || document.activeElement || null;
+
     bloquearScrollFondo();
+    aplicarInertFondo();
 
     modal.classList.add("active");
 
@@ -272,6 +320,13 @@ function abrirModal(producto) {
     cantidadSeleccionadaModal = 1;
 
     actualizarEstadoAgregarModal();
+
+    // 🔥 Feature 03 (accesibilidad §3): foco inicial en CERRAR, no en
+    // AGREGAR — evita que un usuario de teclado dispare una compra por
+    // accidente solo por seguir presionando Enter tras abrir el modal.
+    if (closeModal) {
+        closeModal.focus();
+    }
 }
 
 /* 🔥 Feature 02.6: refleja en el modal si el producto está agotado
@@ -376,6 +431,20 @@ function renderDescripcionesModal(producto) {
     } else {
         modalDesc.textContent = "";
         modalDesc.style.display = "none";
+    }
+
+    // 🔥 Feature 03 (revisión de accesibilidad): aria-describedby del
+    // diálogo solo debe apuntar a #modal-description cuando realmente hay
+    // una descripción corta que mostrar. Si el producto no tiene
+    // descripcionCorta ni descripcion, el atributo se quita por completo
+    // en vez de dejarlo apuntando a un nodo vacío/oculto. No se inventa
+    // ningún texto de descripción.
+    if (modalContent) {
+        if (corta) {
+            modalContent.setAttribute("aria-describedby", "modal-description");
+        } else {
+            modalContent.removeAttribute("aria-describedby");
+        }
     }
 }
 
@@ -498,14 +567,148 @@ function crearFilaSpec(etiqueta, valor) {
 }
 
 // Punto único de cierre. TODOS los caminos que cierran el modal (botón X,
-// clic fuera/overlay, botón AGREGAR del modal, y en el futuro la tecla
-// Escape de Feature 03) deben llamar exclusivamente a esta función, para
-// que el desbloqueo del scroll del fondo nunca pueda quedar desincronizado
-// de alguno de esos caminos. Nunca debe quedar el body bloqueado tras
-// cerrar el modal por cualquier vía.
+// clic fuera/overlay, botón AGREGAR del modal, y la tecla Escape de
+// Feature 03) deben llamar exclusivamente a esta función, para que el
+// desbloqueo del scroll del fondo nunca pueda quedar desincronizado de
+// alguno de esos caminos. Nunca debe quedar el body bloqueado tras cerrar
+// el modal por cualquier vía.
 function cerrarModal() {
     modal.classList.remove("active");
     desbloquearScrollFondo();
+    quitarInertFondo();
+
+    // 🔥 Feature 03 (accesibilidad §6): devuelve el foco al elemento que
+    // originó la apertura de ESTE producto (card/botón de título). Si ya
+    // no existe en el DOM (p. ej. se re-renderizó la grilla por un filtro
+    // mientras el modal estaba abierto), simplemente no se mueve el foco
+    // — resguardo seguro que nunca genera errores ni intenta adivinar un
+    // destino arbitrario.
+    if (elementoOrigenModal && document.body.contains(elementoOrigenModal) && typeof elementoOrigenModal.focus === "function") {
+        elementoOrigenModal.focus();
+    }
+    elementoOrigenModal = null;
+}
+
+/* 🔥 Feature 03 (accesibilidad §5): Escape debe cerrar el modal
+   reutilizando cerrarModal() — nunca duplicar la lógica de cierre.
+   También implementa el focus trap (§4): mientras el modal está abierto,
+   Tab/Shift+Tab nunca deben poder salir de él hacia el header, las cards
+   de atrás, los filtros, el carrito o WhatsApp. Los elementos focoseables
+   se calculan DINÁMICAMENTE en cada pulsación de Tab (no una lista fija),
+   porque cambian según el producto (una imagen vs. varias, "Más
+   información" visible u oculta, AGOTADO, "-" deshabilitado, etc.). */
+function manejarTeclasModal(e) {
+    if (!modal.classList.contains("active")) return;
+
+    if (e.key === "Escape") {
+        e.preventDefault();
+        cerrarModal();
+        return;
+    }
+
+    if (e.key !== "Tab") return;
+
+    const focosables = obtenerFocosablesModal();
+    if (focosables.length === 0) {
+        // No debería pasar nunca (siempre hay al menos el botón CERRAR),
+        // pero por seguridad no se deja escapar el foco del modal.
+        e.preventDefault();
+        return;
+    }
+
+    const primero = focosables[0];
+    const ultimo = focosables[focosables.length - 1];
+    const activo = document.activeElement;
+    const focoDentroDelModal = modalContent && modalContent.contains(activo);
+
+    if (e.shiftKey) {
+        if (!focoDentroDelModal || activo === primero) {
+            e.preventDefault();
+            ultimo.focus();
+        }
+    } else {
+        if (!focoDentroDelModal || activo === ultimo) {
+            e.preventDefault();
+            primero.focus();
+        }
+    }
+}
+
+/* Calcula, en el momento en que se pide, los elementos realmente
+   focoseables y visibles dentro de .modal__content: nunca una lista fija,
+   porque el contenido varía por producto (selector de cantidad oculto si
+   está agotado, "Más información" oculta si no hay ficha, distinta
+   cantidad de dots según cuántas imágenes tenga, etc.). */
+function obtenerFocosablesModal() {
+    if (!modalContent) return [];
+
+    const selector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const candidatos = Array.from(modalContent.querySelectorAll(selector));
+
+    return candidatos.filter((el) => {
+        if (el.hidden || el.closest("[hidden]")) return false;
+
+        const estilo = window.getComputedStyle(el);
+        if (estilo.display === "none" || estilo.visibility === "hidden") return false;
+
+        // offsetParent es null en elementos display:none (propio o de un
+        // ancestro) o position:fixed en algunos casos — se acepta también
+        // el elemento con foco actual para no descartarlo por eso.
+        return el.offsetParent !== null || el === document.activeElement;
+    });
+}
+
+/* 🔥 Feature 03 (accesibilidad §7): mientras el modal está abierto, el
+   contenido del fondo (header, hero, grilla de productos, filtros,
+   WhatsApp, panel del carrito, footer) no debe poder alcanzarse por
+   teclado ni ser anunciado por lectores de pantalla. Se usa el atributo
+   nativo "inert" sobre cada hijo directo de <body> salvo el propio modal
+   (nunca se aplica inert al modal). Si el navegador no soporta "inert"
+   todavía, se usa aria-hidden="true" como alternativa accesible: no
+   bloquea el foco por sí solo, pero el focus trap de arriba ya se
+   encarga de que Tab/Shift+Tab nunca lleguen ahí, y aria-hidden evita que
+   un lector de pantalla lo anuncie. Se restaura exactamente al cerrar. */
+function aplicarInertFondo() {
+    // 🔥 Feature 03 (revisión de accesibilidad): #toast es un hijo directo
+    // de <body> (ver index.html) y por lo tanto quedaba también marcado
+    // inert al abrir el modal — eso apaga la live region para tecnología
+    // asistiva justo cuando más se necesita (AGREGADO ✓, stock alcanzado,
+    // límite de compra se disparan con frecuencia desde dentro del modal,
+    // p. ej. al tocar "+" en el tope). Se excluye explícitamente del
+    // bloqueo del fondo: el toast nunca es alcanzable por teclado ni
+    // ofrece nada que navegar (no tiene controles), así que dejarlo fuera
+    // del inert no reabre ningún hueco en el focus trap.
+    elementosInertados = Array.from(document.body.children).filter(
+        (el) => el !== modal && el.id !== "toast" && el.tagName !== "SCRIPT"
+    );
+
+    elementosInertados.forEach((el) => {
+        if ("inert" in el) {
+            el.inert = true;
+        } else {
+            const previo = el.getAttribute("aria-hidden");
+            if (previo !== null) el.setAttribute("data-aria-hidden-previo", previo);
+            el.setAttribute("aria-hidden", "true");
+        }
+    });
+}
+
+function quitarInertFondo() {
+    elementosInertados.forEach((el) => {
+        if ("inert" in el) {
+            el.inert = false;
+        } else {
+            const previo = el.getAttribute("data-aria-hidden-previo");
+            if (previo !== null) {
+                el.setAttribute("aria-hidden", previo);
+                el.removeAttribute("data-aria-hidden-previo");
+            } else {
+                el.removeAttribute("aria-hidden");
+            }
+        }
+    });
+
+    elementosInertados = [];
 }
 
 // BLOQUEO DE SCROLL DEL FONDO (Feature 02.4)
@@ -576,7 +779,13 @@ function renderCarruselModal(nombreProducto) {
     listaImagenes.forEach((src, i) => {
         const img = document.createElement("img");
         img.src = src;
-        img.alt = `${nombreProducto} - imagen ${i + 1}`;
+        // 🔥 Feature 03 (accesibilidad §10): con una sola imagen el alt es
+        // solo el nombre del producto (evita un alt innecesariamente largo
+        // tipo "imagen 1 de 1"); con varias, incluye la posición y el
+        // total ("Mochila TEQUI - imagen 1 de 3"), igual que los dots.
+        img.alt = listaImagenes.length > 1
+            ? `${nombreProducto} - imagen ${i + 1} de ${listaImagenes.length}`
+            : nombreProducto;
         modalTrack.appendChild(img);
     });
 
