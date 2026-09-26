@@ -32,3 +32,16 @@ body {
     padding-top: 40px; // 🔥 ajusta para mobile
   }
 }
+
+/* 🔥 SCROLL LOCK DEL FONDO (Feature 02.4) — modal de producto abierto.
+   Aplicada/quitada por JS (js/app.js: bloquearScrollFondo/desbloquearScrollFondo).
+   "top" se fija por JS de forma dinámica con -scrollY guardado; aquí solo
+   va lo que es siempre igual mientras el body está bloqueado. */
+body.scroll-lock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+
+  overflow: hidden; // refuerzo: sin esto el html podría seguir generando scrollbar
+}

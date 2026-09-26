@@ -13,6 +13,11 @@
 
   z-index: 3000;
 
+  // Evita que un scroll vertical dentro del modal (necesario en mobile,
+  // ver overflow-y:auto en el media query abajo) se "encadene" hacia la
+  // página de fondo al llegar al límite superior/inferior del modal.
+  overscroll-behavior: contain;
+
   &.active {
     display: flex;
   }
@@ -70,6 +75,10 @@
 
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+
+    // El gesto horizontal del carrusel no debe "escaparse" ni afectar
+    // ningún scroll vertical (del modal o, si algo fallara, del fondo).
+    overscroll-behavior-x: contain;
 
     /* Oculta la barra de scroll manteniendo el scroll funcional */
     scrollbar-width: none; // Firefox

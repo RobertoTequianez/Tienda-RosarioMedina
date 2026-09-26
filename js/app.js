@@ -24,6 +24,12 @@ let modalDots; // .modal__dots: contenedor de los indicadores de posición
 let btnLeft;
 let btnRight;
 
+// SCROLL LOCK DEL FONDO (Feature 02.4)
+// Guarda la posición exacta de scroll de la página al abrir el modal,
+// para poder restaurarla al cerrar. Es el único estado que necesita
+// sobrevivir entre abrirModal() y cerrarModal().
+let scrollYGuardado = 0;
+
 document.addEventListener("DOMContentLoaded", () => {
     modal = document.getElementById("product-modal");
     modalTrack = document.getElementById("modal-track");
@@ -75,19 +81,19 @@ document.addEventListener("DOMContentLoaded", () => {
         modalBtn.addEventListener("click", () => {
             if (productoSeleccionado) {
                 agregarAlCarrito(productoSeleccionado, modalBtn);
-                modal.classList.remove("active");
+                cerrarModal();
             }
         });
     }
 
     if (closeModal) {
         closeModal.addEventListener("click", () => {
-            modal.classList.remove("active");
+            cerrarModal();
         });
 
         window.addEventListener("click", (e) => {
             if (e.target === modal) {
-                modal.classList.remove("active");
+                cerrarModal();
             }
         });
     }
@@ -132,7 +138,12 @@ function crearCard(producto) {
 }
 
 /* MODAL */
+// Punto único de apertura. Cualquier código nuevo que deba ejecutarse al
+// abrir el modal (incluido el bloqueo de scroll del fondo) se agrega aquí,
+// nunca en un caller individual.
 function abrirModal(producto) {
+    bloquearScrollFondo();
+
     modal.classList.add("active");
 
     productoSeleccionado = producto;
@@ -146,6 +157,70 @@ function abrirModal(producto) {
     modalTitle.textContent = producto.nombre;
     modalPrice.textContent = `$${producto.precio}`;
     modalDesc.textContent = producto.descripcion || "Producto premium.";
+}
+
+// Punto único de cierre. TODOS los caminos que cierran el modal (botón X,
+// clic fuera/overlay, botón AGREGAR del modal, y en el futuro la tecla
+// Escape de Feature 03) deben llamar exclusivamente a esta función, para
+// que el desbloqueo del scroll del fondo nunca pueda quedar desincronizado
+// de alguno de esos caminos. Nunca debe quedar el body bloqueado tras
+// cerrar el modal por cualquier vía.
+function cerrarModal() {
+    modal.classList.remove("active");
+    desbloquearScrollFondo();
+}
+
+// BLOQUEO DE SCROLL DEL FONDO (Feature 02.4)
+//
+// Estrategia elegida: "fixed body con compensación de scrollbar".
+// Es la más simple y robusta para este proyecto vanilla (sin dependencias):
+//
+//   1. Guardar window.scrollY exacto antes de bloquear.
+//   2. Medir el ancho de la scrollbar del navegador ANTES de ocultarla
+//      (innerWidth - clientWidth), para poder compensarlo.
+//   3. Fijar <body> con position:fixed y top:-scrollY, de forma que el
+//      contenido quede visualmente en el mismo lugar pero deje de poder
+//      desplazarse (no es un simple overflow:hidden: eso por sí solo no
+//      evita el "scroll bounce" en iOS ni el salto de posición).
+//   4. Compensar el padding-right en body y en el header (que también es
+//      position:fixed) por el ancho que libera la scrollbar al ocultarse,
+//      evitando el salto lateral de layout.
+//
+// El modal en sí (.modal, position:fixed, z-index por encima de todo) no
+// se ve afectado por que <body> esté fijo: sigue centrado sobre el viewport.
+function bloquearScrollFondo() {
+    scrollYGuardado = window.scrollY;
+
+    // Ancho de la scrollbar vertical del navegador (0 si no había, p.ej.
+    // en móvil con scrollbar superpuesta o si el contenido no desborda).
+    const anchoScrollbar = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.classList.add("scroll-lock");
+    document.body.style.top = `-${scrollYGuardado}px`;
+
+    if (anchoScrollbar > 0) {
+        document.body.style.paddingRight = `${anchoScrollbar}px`;
+
+        // El header es position:fixed;width:100% (ver _header.scss), por lo
+        // que no hereda el padding del body: hay que compensarlo aparte
+        // para que no se desalinee lateralmente al desaparecer la scrollbar.
+        const header = document.querySelector(".header");
+        if (header) header.style.paddingRight = `${anchoScrollbar}px`;
+    }
+}
+
+function desbloquearScrollFondo() {
+    document.body.classList.remove("scroll-lock");
+    document.body.style.top = "";
+    document.body.style.paddingRight = "";
+
+    const header = document.querySelector(".header");
+    if (header) header.style.paddingRight = "";
+
+    // Restaura exactamente la posición donde estaba el usuario antes de
+    // abrir el modal. Sin "behavior: smooth": debe ser instantáneo, no
+    // debe verse como un nuevo scroll animado.
+    window.scrollTo(0, scrollYGuardado);
 }
 
 /* CARRUSEL DEL MODAL (DOM real con scroll-snap, no reemplazo de src) */
@@ -237,10 +312,11 @@ function desplazarCarruselA(indice) {
 }
 
 /* BOTÓN AGREGAR DESDE MODAL */
-// event binding en DOMContentLoaded (arriba)
+// event binding en DOMContentLoaded (arriba); cierre vía cerrarModal()
 
 /* CERRAR MODAL */
-// event binding en DOMContentLoaded (arriba)
+// event binding en DOMContentLoaded (arriba); toda la lógica de cierre
+// vive en cerrarModal() (ver sección MODAL más arriba)
 
 
 /* RENDER PRODUCTOS */
