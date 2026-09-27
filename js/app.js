@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* CREAR CARD */
-function crearCard(producto) {
+function crearCard(producto, esPrimeraFila) {
     const card = document.createElement("div");
     card.classList.add("product-card");
 
@@ -223,9 +223,21 @@ function crearCard(producto) {
     // ni siquiera dispare el evento click.
     const agotado = estaAgotado(producto);
 
+    // 🔥 Feature 04 (rendimiento): la primera fila carga eager (nunca debe
+    // retrasarse con lazy loading, puede estar visible de entrada); el
+    // resto usa loading="lazy" para no descargar imágenes fuera del
+    // viewport inicial. decoding="async" en todos los casos: ninguna
+    // imagen de card es la LCP real (esa es el fondo del hero, ver
+    // index.html/_hero.scss), así que decodificarla no debe bloquear el
+    // hilo principal. width/height son un tamaño de referencia — el CSS
+    // (height:280px, width:100%, object-fit:cover) sigue mandando siempre
+    // sobre el tamaño visual real; solo ayudan al navegador a reservar
+    // espacio antes de que cargue la imagen (evita CLS).
+    const loadingAttr = esPrimeraFila ? "" : ` loading="lazy"`;
+
     card.innerHTML = `
         <div class="product-card__image">
-            <img src="${producto.imagen}" alt="${producto.nombre}">
+            <img src="${producto.imagen}" alt="${producto.nombre}" width="300" height="280" decoding="async"${loadingAttr}>
         </div>
 
         <div class="product-card__info">
@@ -786,6 +798,20 @@ function renderCarruselModal(nombreProducto) {
         img.alt = listaImagenes.length > 1
             ? `${nombreProducto} - imagen ${i + 1} de ${listaImagenes.length}`
             : nombreProducto;
+
+        // 🔥 Feature 04 (rendimiento): estas imágenes ya solo se crean al
+        // abrir el modal (nunca en la carga inicial de la página — este
+        // comportamiento ya existía). Dentro del carrusel, cuando hay
+        // varias imágenes, la primera es la que se ve de inmediato
+        // (carga eager); el resto vive fuera de la vista dentro del
+        // track con scroll horizontal, así que loading="lazy" evita
+        // descargarlas si el usuario nunca desliza hasta ellas — el
+        // propio navegador las pide en cuanto entran al viewport del
+        // scroll, sin necesitar ningún loader propio. decoding="async"
+        // en todas: ninguna es la LCP de la página.
+        img.decoding = "async";
+        if (i > 0) img.loading = "lazy";
+
         modalTrack.appendChild(img);
     });
 
@@ -877,8 +903,13 @@ function renderProductos() {
         categoriaActual === "all" || p.categoria === categoriaActual
     );
 
-    filtrados.forEach(producto => {
-        const card = crearCard(producto);
+    // 🔥 Feature 04 (rendimiento): las primeras 4 cards (una fila completa
+    // en el grid de escritorio, ver scss/_products.scss) se consideran
+    // "primera fila" y se cargan eager (sin lazy loading) porque pueden
+    // estar visibles de entrada; el resto usa loading="lazy" — ver
+    // crearCard().
+    filtrados.forEach((producto, indice) => {
+        const card = crearCard(producto, indice < 4);
         contenedor.appendChild(card);
     });
 }

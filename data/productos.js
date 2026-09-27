@@ -60,7 +60,7 @@ const productos = [
     variante: "Negra",
     precio: 899,
     categoria: "bolsas",
-    imagen: "assets/videos/images/producto3.png",
+    imagen: "assets/videos/images/producto3.webp",
     stock: 0, // prueba — agotado a propósito, para validar ese escenario
     disponible: false,
     maxCompra: 10,
@@ -107,7 +107,7 @@ const productos = [
     variante: "Negra",
     precio: 999,
     categoria: "mochilas",
-    imagen: "assets/videos/images/producto3.png",
+    imagen: "assets/videos/images/producto3.webp",
     stock: 3, // prueba — stock bajo, para validar el mensaje de stock
     disponible: true,
     maxCompra: 10
@@ -144,7 +144,7 @@ const productos = [
 
   imagenes: [
     "assets/videos/images/producto1.jpg",
-    "assets/videos/images/producto3.png",
+    "assets/videos/images/producto3.webp",
     "assets/videos/images/producto4.jpg"
   ],
   stock: 5, // prueba — usado en las pruebas obligatorias de stock/límite
@@ -175,7 +175,7 @@ const productos = [
     variante: "Verde",
     precio: 999,
     categoria: "mochilas",
-    imagen: "assets/videos/images/Canon_00001825.JPG",
+    imagen: "assets/videos/images/Canon_00001825.webp",
     stock: 20, // prueba
     disponible: true,
     maxCompra: 5 // prueba — límite de compra bajo, para validar ese escenario

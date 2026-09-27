@@ -151,17 +151,7 @@ textarea:focus-visible,
   width: 100%;
   height: 60vh;
   overflow: hidden;
-  background: url("../assets/videos/images/Canon_00001897.JPG") center/cover no-repeat;
-}
-.hero-video__media {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  min-width: 100%;
-  min-height: 100%;
-  transform: translate(-50%, -50%);
-  object-fit: cover;
-  display: none;
+  background: url("../assets/videos/images/Canon_00001897.webp") center/cover no-repeat;
 }
 .hero-video__overlay {
   position: absolute;
@@ -182,12 +172,6 @@ textarea:focus-visible,
   margin-bottom: 20px;
 }
 
-/* MOBILE OPTIMIZATION */
-@media (max-width: 768px) {
-  .hero-video__media {
-    display: none;
-  }
-}
 .products__container {
   padding: 40px;
   overflow: hidden;
@@ -1003,5 +987,3 @@ textarea:focus-visible,
     transform: translate(-50%, 0) !important;
   }
 }
-
-/*# sourceMappingURL=styles.css.map */

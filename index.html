@@ -6,6 +6,14 @@
     <title>Tienda Rosario</title>
 
     <link rel="stylesheet" href="css/styles.css">
+
+    <!-- 🔥 Feature 04 (rendimiento): el fondo del hero es una imagen de
+         fondo CSS (scss/_hero.scss), es el candidato real a LCP (ocupa la
+         mayor parte del viewport inicial) y no puede recibir
+         loading="lazy"/fetchpriority como un <img>. Se precarga
+         explícitamente con alta prioridad — es la ÚNICA imagen marcada
+         así en todo el sitio. -->
+    <link rel="preload" as="image" href="assets/videos/images/Canon_00001897.webp" fetchpriority="high">
 </head>
 
 <body>
@@ -57,11 +65,14 @@
 </header>
 
 <!-- 🎥 HERO VIDEO -->
+<!-- Feature 04 (rendimiento): se retiró el <video> — su único <source>
+     apuntaba a "assets/videos/" (carpeta, no un archivo real de video),
+     lo que generaba una solicitud rota (404) en cada carga. El elemento
+     además estaba forzado a display:none siempre (scss/_hero.scss), así
+     que nunca se veía: no existe video real, no se inventa uno. El fondo
+     visible (imagen, ver .hero-video en scss/_hero.scss) sigue funcionando
+     exactamente igual, ahora en WebP y precargado arriba. -->
 <section class="hero-video">
-
-    <video class="hero-video__media" autoplay muted loop playsinline>
-        <source src="assets/videos/" type="video/mp4">
-    </video>
 
     <div class="hero-video__overlay"></div>
 
