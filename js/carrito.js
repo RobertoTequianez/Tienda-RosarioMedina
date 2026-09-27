@@ -1,6 +1,30 @@
+/* 🔥 localStorage (Feature 05, punto 22): es únicamente persistencia de
+   FRONTEND/DEMO — sobrevive recargas de página en este navegador, nada
+   más. En producción NO será la autoridad de precio, stock, descuentos,
+   envío ni total final: todo eso deberá revalidarse del lado del servidor
+   cuando exista backend/checkout real (un usuario puede editar
+   localStorage manualmente; normalizarCarritoAlCargar() ya defiende la UI
+   de esa manipulación, pero eso es solo higiene de interfaz, no
+   seguridad/autoridad de datos). */
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
-/* 🔥 CONFIG ENVÍO */
+/* 🔥 CONFIG ENVÍO — ya estaba centralizada en un único lugar antes de
+   Feature 05 (ver auditoría en el reporte de la feature): costo fijo de
+   $150 MXN, gratis a partir de $2000 MXN de subtotal. Ningún otro archivo
+   define esta regla por su cuenta; calcularEnvio() es el único punto que
+   la consulta. Estos valores NO se inventaron ni se modificaron en
+   Feature 05 — son exactamente los que ya regían el carrito.
+
+   🔥 LIMITACIÓN CONOCIDA / FUTURO (Feature 05, punto 7): esta regla es un
+   porcentaje/umbral simple sobre el subtotal, temporal hasta que exista
+   backend. El costo de envío real deberá depender de variables logísticas
+   por producto (peso, largo, ancho, alto, volumen, destino, transportista,
+   servicio elegido) — no de un monto fijo. El panel administrativo futuro
+   deberá permitir definir esos datos por producto (o un "shippingProfile"/
+   clase de envío), y el backend será quien calcule y revalide el envío
+   real; esta función seguirá siendo, como mucho, un estimado de UX en el
+   frontend. No se modifica data/productos.js para inventar esos campos
+   todavía. */
 const CONFIG_ENVIO = {
     costo: 150,
     gratisDesde: 2000,
@@ -324,75 +348,112 @@ function marcarBotonComoAgregado(boton) {
     }, 1200);
 }
 
+/* 🔥 Feature 05: formato monetario consistente en TODO el carrito
+   ($199 MXN, $1,990 MXN, $13,978 MXN). Reutiliza exactamente la misma
+   función que ya usa el modal de producto desde Feature 02.7
+   (formatearPrecioMXN, definida en js/app.js) — un solo formateador para
+   toda la tienda, en vez de tener dos que puedan desincronizarse. Es
+   presentación pura: los valores numéricos (precio, subtotal, envío,
+   total) nunca se convierten a string antes de usarse en un cálculo. */
+
 /* 🔥 RENDER DEL CARRITO */
 function renderCarrito() {
     const contenedor = document.getElementById("cart-items");
-    const totalContainer = document.getElementById("cart-total");
+    const resumenContainer = document.getElementById("cart-summary");
 
     if (!contenedor) return;
 
     contenedor.innerHTML = "";
 
-    carrito.forEach(prod => {
+    // 🔥 Feature 05 (punto 17): estado vacío explícito, minimalista, sin
+    // ilustraciones externas.
+    if (carrito.length === 0) {
+        const vacio = document.createElement("div");
+        vacio.className = "cart-empty";
+        vacio.innerHTML = `
+            <p class="cart-empty__titulo">Tu carrito está vacío.</p>
+            <p class="cart-empty__texto">Agrega productos para verlos aquí.</p>
+        `;
+        contenedor.appendChild(vacio);
+
+        if (resumenContainer) {
+            resumenContainer.innerHTML = "";
+            resumenContainer.hidden = true;
+        }
+        return;
+    }
+
+    if (resumenContainer) resumenContainer.hidden = false;
+
+    carrito.forEach((prod, indice) => {
         const item = document.createElement("div");
         item.classList.add("cart-item");
+        // 🔥 Feature 05 (punto 2): separador discreto entre productos —
+        // el último no lleva línea (evita un borde colgando al final de
+        // la lista).
+        if (indice === carrito.length - 1) item.classList.add("cart-item--last");
 
         const subtotal = Number(prod.precio) * prod.cantidad;
 
-        // 🔥 Feature 02.6: "-" se deshabilita en el mínimo (1) porque ahí no
-        // hace falta explicar nada — para quitar el producto existe
-        // ELIMINAR. "+" NUNCA se deshabilita al llegar al tope: un botón
-        // disabled no dispara click en el navegador, y el caso obligatorio
-        // es justamente que al intentar sumar en el tope se vea el mensaje
-        // ("Solo hay X disponibles" / "Límite de compra alcanzado") — eso
-        // requiere que el clic sí llegue a sumar(), que es quien valida y
-        // muestra el toast a través de validarCantidadProducto().
+        // 🔥 Feature 02.6 (sin cambios de lógica): "-" se deshabilita en
+        // el mínimo (1) porque ahí no hace falta explicar nada — para
+        // quitar el producto existe ELIMINAR. "+" NUNCA se deshabilita al
+        // llegar al tope: un botón disabled no dispara click en el
+        // navegador, y el caso obligatorio es justamente que al intentar
+        // sumar en el tope se vea el mensaje ("Solo hay X disponibles" /
+        // "Límite de compra alcanzado") — eso requiere que el clic sí
+        // llegue a sumar(), que es quien valida y muestra el toast a
+        // través de validarCantidadProducto().
         const enElMinimo = prod.cantidad <= 1;
 
         item.innerHTML = `
             <div class="cart-item__info">
-                <img src="${prod.imagen}" alt="${prod.nombre}" />
+                <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy" decoding="async" />
 
                 <div class="cart-item__text">
-                    <strong>${prod.nombre}</strong>
-                    <p class="cart-price">$${prod.precio}</p>
-                    <p class="cart-subtotal">$${subtotal}</p>
+                    <strong class="cart-item__nombre">${prod.nombre}</strong>
+                    <p class="cart-price">${formatearPrecioMXN(prod.precio)}</p>
                 </div>
             </div>
 
-            <div class="cart-item__controls">
-                <button data-action="restar" data-id="${prod.id}" aria-label="Disminuir cantidad de ${prod.nombre}" ${enElMinimo ? "disabled" : ""}>-</button>
-                <span>${prod.cantidad}</span>
-                <button data-action="sumar" data-id="${prod.id}" aria-label="Aumentar cantidad de ${prod.nombre}">+</button>
-                <button data-action="eliminar" data-id="${prod.id}" aria-label="Eliminar ${prod.nombre} del carrito">🗑</button>
+            <div class="cart-item__aside">
+                <div class="cart-item__controls">
+                    <button type="button" class="cart-item__qty-btn" data-action="restar" data-id="${prod.id}" aria-label="Disminuir cantidad de ${prod.nombre}" ${enElMinimo ? "disabled" : ""}>&minus;</button>
+                    <span class="cart-item__qty-value">${prod.cantidad}</span>
+                    <button type="button" class="cart-item__qty-btn" data-action="sumar" data-id="${prod.id}" aria-label="Aumentar cantidad de ${prod.nombre}">+</button>
+                    <button type="button" class="cart-item__remove" data-action="eliminar" data-id="${prod.id}" aria-label="Eliminar ${prod.nombre} del carrito">🗑</button>
+                </div>
+
+                <p class="cart-subtotal">${formatearPrecioMXN(subtotal)}</p>
             </div>
         `;
 
         contenedor.appendChild(item);
     });
 
-    /* 🔥 TOTALES */
-    if (totalContainer) {
+    /* 🔥 RESUMEN (punto 4): "Productos" -> "Subtotal" (es realmente la
+       suma antes de envío); el Total gana jerarquía visual vía CSS
+       (scss/_cart.scss). No se tocan calcularTotal/calcularEnvio/
+       calcularTotalFinal — solo cómo se muestran sus resultados. */
+    if (resumenContainer) {
         const total = calcularTotal();
         const envio = calcularEnvio(total);
         const totalFinal = calcularTotalFinal();
 
-        totalContainer.innerHTML = `
-            <div>
-                <span>Productos:</span>
-                <strong>$${total}</strong>
+        resumenContainer.innerHTML = `
+            <div class="cart-summary__row">
+                <span>Subtotal</span>
+                <strong>${formatearPrecioMXN(total)}</strong>
             </div>
 
-            <div>
-                <span>Envío:</span>
-                <strong>${envio === 0 ? "GRATIS" : "$" + envio}</strong>
+            <div class="cart-summary__row">
+                <span>Envío</span>
+                <strong>${envio === 0 ? "GRATIS" : formatearPrecioMXN(envio)}</strong>
             </div>
 
-            <hr/>
-
-            <div>
-                <span>Total:</span>
-                <strong>$${totalFinal}</strong>
+            <div class="cart-summary__row cart-summary__row--total">
+                <span>Total</span>
+                <strong>${formatearPrecioMXN(totalFinal)}</strong>
             </div>
         `;
     }
@@ -463,3 +524,260 @@ if (contenedorCarrito) {
 /* La inicialización (actualizarContador/renderCarrito) queda a cargo   */
 /* del DOMContentLoaded de app.js, que ya la ejecuta. Se elimina aquí   */
 /* la inicialización duplicada que existía en este archivo.            */
+
+/* ==================================================================
+   🔥 Feature 05 — CARRITO: RESPONSIVE + ACCESIBILIDAD
+   ==================================================================
+   Decisión de arquitectura (punto 8/9/10 del requerimiento):
+
+   - DESKTOP (> 1024px): el carrito es un panel LATERAL, NO modal. NO se
+     bloquea el scroll del fondo, NO se aplica inert, NO hay focus trap,
+     NO se fuerza el foco al abrir. El usuario puede seguir navegando,
+     agregando productos y viendo el carrito actualizarse en vivo sin
+     cerrarlo (punto 16/19).
+
+   - TABLET/MOBILE (<= 1024px): el carrito se comporta como un DRAWER
+     MODAL — mismo patrón que el modal de producto (Feature 03): fondo
+     bloqueado (scroll-lock + inert), focus trap, Escape cierra, foco
+     inicial en CERRAR, devolución de foco al cerrar.
+
+   Se eligió 1024px (no el único breakpoint de 768px que ya usa el resto
+   del proyecto) porque el requerimiento pide EXPLÍCITAMENTE que 768px
+   (tablet) se comporte como modal igual que mobile, y que recién en
+   1366px/1920px (desktop) sea panel lateral — ningún breakpoint ya
+   existente en el proyecto separa esos dos grupos; 1024px es el punto
+   intermedio razonable entre 768 (debe seguir siendo modal) y 1366 (debe
+   ser lateral), documentado aquí como decisión nueva y explícita de esta
+   feature.
+
+   matchMedia (no un simple listener de "resize") para reaccionar
+   exactamente cuando se cruza ese breakpoint, sin recalcular en cada
+   pixel de un resize. */
+const MEDIA_QUERY_CARRITO_MODAL = window.matchMedia("(max-width: 1024px)");
+
+function modoCarritoEsModal() {
+    return MEDIA_QUERY_CARRITO_MODAL.matches;
+}
+
+// Elemento que disparó la apertura (para devolver el foco al cerrar,
+// igual que elementoOrigenModal en js/app.js) y lista de elementos del
+// fondo puestos en inert mientras el carrito funciona como drawer modal.
+let elementoOrigenCarrito = null;
+let elementosInertadosCarrito = [];
+
+const cartPanelEl = document.getElementById("cart-panel");
+const cartOverlayEl = document.getElementById("cart-overlay");
+const cartCloseBtn = document.getElementById("close-cart");
+const cartTitleId = "cart-title";
+
+/* Aplica/actualiza los atributos ARIA del carrito según el modo actual.
+   Se llama al abrir y también al cruzar el breakpoint con el carrito ya
+   abierto (punto 11: resize). En desktop NO se declara aria-modal="true"
+   — el resto de la tienda sigue siendo interactivo de verdad, decirle a
+   tecnología asistiva que es un diálogo modal sería incorrecto (punto 18:
+   "utilizar una semántica adecuada de panel/región complementaria"). */
+function actualizarSemanticaCarrito() {
+    if (!cartPanelEl) return;
+
+    if (modoCarritoEsModal()) {
+        cartPanelEl.setAttribute("role", "dialog");
+        cartPanelEl.setAttribute("aria-modal", "true");
+        cartPanelEl.setAttribute("aria-labelledby", cartTitleId);
+    } else {
+        cartPanelEl.removeAttribute("aria-modal");
+        cartPanelEl.setAttribute("role", "region");
+        cartPanelEl.setAttribute("aria-labelledby", cartTitleId);
+    }
+}
+
+/* Focus trap + Escape, análogos a manejarTeclasModal()/
+   obtenerFocosablesModal() de js/app.js (Feature 03), pero acotados a
+   #cart-panel y activos SOLO cuando el carrito está abierto Y funciona
+   en modo modal (tablet/mobile). En desktop este handler no hace nada:
+   el carrito no atrapa el foco ahí. */
+function obtenerFocosablesCarrito() {
+    if (!cartPanelEl) return [];
+
+    const selector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const candidatos = Array.from(cartPanelEl.querySelectorAll(selector));
+
+    return candidatos.filter((el) => {
+        if (el.hidden || el.closest("[hidden]")) return false;
+        const estilo = window.getComputedStyle(el);
+        if (estilo.display === "none" || estilo.visibility === "hidden") return false;
+        return el.offsetParent !== null || el === document.activeElement;
+    });
+}
+
+function manejarTeclasCarrito(e) {
+    if (!cartPanelEl || !cartPanelEl.classList.contains("active")) return;
+    if (!modoCarritoEsModal()) return; // en desktop no hay trap ni Escape propio del carrito
+
+    if (e.key === "Escape") {
+        e.preventDefault();
+        cerrarCarrito();
+        return;
+    }
+
+    if (e.key !== "Tab") return;
+
+    const focosables = obtenerFocosablesCarrito();
+    if (focosables.length === 0) {
+        e.preventDefault();
+        return;
+    }
+
+    const primero = focosables[0];
+    const ultimo = focosables[focosables.length - 1];
+    const activo = document.activeElement;
+    const focoDentro = cartPanelEl.contains(activo);
+
+    if (e.shiftKey) {
+        if (!focoDentro || activo === primero) {
+            e.preventDefault();
+            ultimo.focus();
+        }
+    } else {
+        if (!focoDentro || activo === ultimo) {
+            e.preventDefault();
+            primero.focus();
+        }
+    }
+}
+
+if (cartPanelEl) {
+    cartPanelEl.addEventListener("keydown", manejarTeclasCarrito);
+}
+
+/* inert del fondo — mismo patrón que aplicarInertFondo()/
+   quitarInertFondo() del modal de producto (js/app.js, Feature 03), pero
+   excluyendo #cart-panel (en vez de #product-modal) y siempre excluyendo
+   #toast para que el toast de feedback (AGREGADO ✓ / stock / límite)
+   siga siendo anunciado por tecnología asistiva mientras el carrito está
+   abierto en modo modal (punto 20 — no duplicar la corrección de
+   Feature 03, replicar exactamente el mismo criterio). No se reutiliza
+   literalmente la función del modal porque excluye un elemento distinto
+   (el modal de producto, no el carrito); son dos regiones "modales"
+   independientes que pueden convivir (punto 19). */
+function aplicarInertFondoCarrito() {
+    elementosInertadosCarrito = Array.from(document.body.children).filter(
+        (el) => el !== cartPanelEl && el.id !== "toast" && el.tagName !== "SCRIPT"
+    );
+
+    elementosInertadosCarrito.forEach((el) => {
+        if ("inert" in el) {
+            el.inert = true;
+        } else {
+            const previo = el.getAttribute("aria-hidden");
+            if (previo !== null) el.setAttribute("data-aria-hidden-previo-carrito", previo);
+            el.setAttribute("aria-hidden", "true");
+        }
+    });
+}
+
+function quitarInertFondoCarrito() {
+    elementosInertadosCarrito.forEach((el) => {
+        if ("inert" in el) {
+            el.inert = false;
+        } else {
+            const previo = el.getAttribute("data-aria-hidden-previo-carrito");
+            if (previo !== null) {
+                el.setAttribute("aria-hidden", previo);
+                el.removeAttribute("data-aria-hidden-previo-carrito");
+            } else {
+                el.removeAttribute("aria-hidden");
+            }
+        }
+    });
+    elementosInertadosCarrito = [];
+}
+
+/* Punto único de apertura del carrito. "origen" es el elemento que
+   disparó la apertura (normalmente el botón del carrito en el header),
+   para poder devolverle el foco al cerrar. */
+function abrirCarrito(origen) {
+    if (!cartPanelEl) return;
+
+    elementoOrigenCarrito = origen || document.activeElement || null;
+
+    renderCarrito();
+    cartPanelEl.classList.add("active");
+    actualizarSemanticaCarrito();
+
+    if (modoCarritoEsModal()) {
+        bloquearScrollFondo();
+        aplicarInertFondoCarrito();
+        if (cartOverlayEl) cartOverlayEl.classList.add("active");
+
+        // Foco inicial en CERRAR (punto 18) — solo tiene sentido forzarlo
+        // en modo modal; en desktop el carrito no "roba" el foco de la
+        // tienda.
+        if (cartCloseBtn) cartCloseBtn.focus();
+    }
+}
+
+/* Punto único de cierre del carrito. Todos los caminos (botón X, clic en
+   el overlay, Escape) deben llamar exclusivamente a esta función — mismo
+   principio que cerrarModal() en js/app.js (Feature 03: "no duplicar
+   lógica de cierre"). */
+function cerrarCarrito() {
+    if (!cartPanelEl) return;
+
+    cartPanelEl.classList.remove("active");
+
+    if (cartOverlayEl) cartOverlayEl.classList.remove("active");
+    desbloquearScrollFondo();
+    quitarInertFondoCarrito();
+
+    // Devuelve el foco al elemento que abrió el carrito (punto 18), con
+    // resguardo seguro si ya no existe en el DOM — nunca genera errores.
+    if (elementoOrigenCarrito && document.body.contains(elementoOrigenCarrito) && typeof elementoOrigenCarrito.focus === "function") {
+        elementoOrigenCarrito.focus();
+    }
+    elementoOrigenCarrito = null;
+}
+
+/* 🔥 Punto 11 — RESIZE/ROTACIÓN CON CARRITO ABIERTO.
+   Si el carrito está abierto y el viewport cruza el breakpoint mientras
+   tanto (desktop -> mobile/tablet o viceversa), el modo debe
+   reconciliarse: nunca debe quedar scroll-lock/inert/focus-trap activo
+   en desktop, ni el carrito abierto en mobile/tablet sin bloquear el
+   fondo. */
+MEDIA_QUERY_CARRITO_MODAL.addEventListener("change", () => {
+    if (!cartPanelEl || !cartPanelEl.classList.contains("active")) return;
+
+    actualizarSemanticaCarrito();
+
+    if (modoCarritoEsModal()) {
+        // Pasó a modo modal (venía de desktop): aplicar lo que faltaba.
+        bloquearScrollFondo();
+        aplicarInertFondoCarrito();
+        if (cartOverlayEl) cartOverlayEl.classList.add("active");
+    } else {
+        // Pasó a modo panel lateral (venía de modal): liberar todo lo
+        // que el modo modal había bloqueado, sin dejar residuos.
+        desbloquearScrollFondo();
+        quitarInertFondoCarrito();
+        if (cartOverlayEl) cartOverlayEl.classList.remove("active");
+    }
+});
+
+/* Apertura/cierre: botón del header, botón X, y overlay (solo visible/
+   interactivo en modo modal — en desktop está siempre oculto vía CSS, así
+   que un clic ahí nunca puede ocurrir). */
+const cartTriggerBtn = document.querySelector(".btn-cart");
+
+if (cartTriggerBtn) {
+    cartTriggerBtn.addEventListener("click", () => abrirCarrito(cartTriggerBtn));
+}
+
+if (cartCloseBtn) {
+    cartCloseBtn.addEventListener("click", () => cerrarCarrito());
+}
+
+if (cartOverlayEl) {
+    cartOverlayEl.addEventListener("click", () => cerrarCarrito());
+}
+
+// Semántica correcta desde el primer render, incluso antes de abrirlo.
+actualizarSemanticaCarrito();

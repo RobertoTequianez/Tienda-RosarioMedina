@@ -109,19 +109,25 @@
 <!--  WHATSAPP -->
 <button class="whatsapp-btn">💬</button>
 
+<!-- 🔥 Feature 05: overlay independiente del panel. Solo se activa (JS)
+     cuando el carrito funciona como drawer modal (tablet/mobile) — en
+     desktop el carrito es un panel lateral NO modal y este overlay nunca
+     se muestra, para que el fondo siga siendo clickeable/operable. -->
+<div id="cart-overlay" class="cart-overlay"></div>
+
+<!-- role/aria-modal/aria-labelledby se agregan y quitan dinámicamente
+     desde JS (js/carrito.js: actualizarSemanticaCarrito) según el modo
+     responsive — en desktop el carrito NO es un diálogo modal. -->
 <div id="cart-panel" class="cart-panel">
 
   <div class="cart-panel__header">
-    <h3>Carrito</h3>
-    <button id="close-cart" aria-label="Cerrar carrito">X</button>
+    <h3 id="cart-title">Carrito</h3>
+    <button id="close-cart" class="cart-panel__close" aria-label="Cerrar carrito">&times;</button>
   </div>
 
   <div id="cart-items" class="cart-panel__items"></div>
 
-  <div class="cart-total">
-    <strong>Total:</strong>
-    <span id="cart-total">$0</span>
-  </div>
+  <div id="cart-summary" class="cart-panel__summary"></div>
 
 </div>
 

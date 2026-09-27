@@ -1,9 +1,46 @@
+/* 🔥 Feature 05 — CARRITO: UX, RESPONSIVE Y ACCESIBILIDAD
+   ==================================================================
+   Se conserva la estructura compacta existente (fila [-] N [+] [eliminar],
+   sin convertir cada producto en tarjeta vertical). Lo que cambia es
+   jerarquía visual, homologación con los controles del modal de producto
+   (scss/_modal.scss &__qty-btn), formato monetario y el comportamiento
+   responsive: panel lateral NO modal en desktop (> 1024px) vs. drawer
+   modal en tablet/mobile (<= 1024px). El breakpoint se documenta también
+   en js/carrito.js (MEDIA_QUERY_CARRITO_MODAL). */
+
+/* 🔥 OVERLAY — solo se activa (JS) cuando el carrito funciona como
+   drawer modal (tablet/mobile). En desktop nunca se muestra: el fondo
+   debe seguir siendo clickeable/operable (punto 8). Mismo tinte que el
+   overlay del modal de producto (scss/_modal.scss), para consistencia
+   visual entre ambos "modales" de la tienda. */
+.cart-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999; // debajo del panel (1000), encima del resto
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+
+  &.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 /*  PANEL */
 .cart-panel {
   position: fixed;
   right: -100%;
   top: 0;
-  width: 320px;
+  // 🔥 Ancho desktop ajustado de 320px → 400px (punto 2 del ajuste visual):
+  // 320px comprimía nombre/precio/controles en la misma fila. 400px da
+  // más aire sin acercarse a "media pantalla" (bien por debajo de la
+  // mitad de 1366/1920) y sigue dejando la tienda visible y operable
+  // detrás del panel lateral. Los anchos de tablet/mobile (media queries
+  // más abajo, <=1024px y <=480px) NO se modifican.
+  width: 400px;
   height: 100vh;
   background: white;
   box-shadow: -5px 0 15px rgba(0,0,0,0.1);
@@ -22,111 +59,350 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
+    padding: 16px 18px;
     border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
   }
 
-  /*  ITEMS (SCROLL REAL) */
+  /* 🔥 Botón cerrar homologado con el lenguaje visual del modal de
+     producto (&__close en scss/_modal.scss): círculo discreto, mismo
+     carácter "×". No se posiciona absoluto como en el modal porque acá
+     vive dentro del header en flujo normal (space-between con el
+     título) — mismas proporciones/forma, distinto lugar en el layout. */
+  &__close {
+    width: 30px;
+    height: 30px;
+    min-height: 30px; // área táctil accesible
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: transparent;
+    color: $color-black;
+    border-radius: 50%;
+    cursor: pointer;
+
+    font-size: 18px;
+    line-height: 1;
+
+    transition: background 0.2s ease;
+
+    @media (hover: hover) {
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+    }
+  }
+
+  /*  ITEMS (SCROLL REAL) — punto 12: header/lista-scrolleable/resumen.
+      El resumen es un hermano normal DESPUÉS de esta lista (no
+      position:absolute/overlay), así que nunca puede tapar al último
+      producto: simplemente ocupa su propio espacio al final de la
+      columna flex. */
   &__items {
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
-    padding-bottom: 80px; // espacio para total
+    overscroll-behavior: contain;
+    padding: 16px 18px;
+  }
+
+  /* 🔥 RESUMEN (Subtotal/Envío/Total) — punto 4. Se mantiene siempre
+     visible al fondo del drawer (no scrollea junto con la lista). */
+  &__summary {
+    flex-shrink: 0;
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #eee;
+    background: white;
+    box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.06);
+
+    &[hidden] {
+      display: none;
+    }
   }
 }
 
-/*  ITEM */
+/* 🔥 ESTADO VACÍO (punto 17) — minimalista, sin ilustraciones. */
+.cart-empty {
+  padding: 48px 12px;
+  text-align: center;
+  color: $color-gray;
+
+  &__titulo {
+    font-size: 15px;
+    font-weight: 600;
+    color: $color-black;
+    margin-bottom: 6px;
+  }
+
+  &__texto {
+    font-size: 13px;
+  }
+}
+
+/*  ITEM — se conserva el patrón compacto [img][nombre/precio] [-N+][🗑] [subtotal] */
 .cart-item {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; //  mejora alineación
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 10px;
+
+  padding: 14px 0;
+  // 🔥 Separación visual ligera entre productos (punto 2): border-bottom
+  // muy discreto en vez de márgenes pesados o tarjetas. El primer item ya
+  // queda separado del header por &__items padding; el último no lleva
+  // línea (ver .cart-item--last).
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &--last {
+    border-bottom: none;
+    padding-bottom: 2px;
+  }
 }
 
 /*  INFO (imagen + texto) */
 .cart-item__info {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
-  max-width: 65%; //  evita que rompa layout
+  align-items: center;
+  min-width: 0; // permite que el nombre truncable funcione dentro del flex
+
+  // 🔥 CAUSA DEL TRUNCAMIENTO ("Lapicera M...", "Mochila Ur..."): esta fila
+  // no tenía flex-basis/flex-grow, así que .cart-item (flex row con
+  // justify-content:space-between) le daba únicamente el ancho de su
+  // contenido — es decir, .cart-item__text nunca quedaba con un ancho
+  // acotado. -webkit-line-clamp solo puede "envolver" (wrap) texto dentro
+  // de una caja con ancho definido; sin ese límite el texto simplemente
+  // medía su propia línea completa y el navegador aplicaba el "…" del
+  // line-clamp como si ya hubiera una sola línea posible. Al darle flex:1
+  // aquí (y a .cart-item__text más abajo), .cart-item__info pasa a ocupar
+  // todo el espacio disponible entre la imagen y los controles, y recién
+  // ahí el nombre tiene un ancho real dentro del cual envolver a 1 o 2
+  // líneas según corresponda.
+  flex: 1 1 auto;
 }
 
 /*  IMAGEN */
 .cart-item__info img {
-  width: 55px;
-  height: 55px;
+  width: 52px;
+  height: 52px;
   object-fit: cover;
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
-/*  TEXTO */
+/*  TEXTO — jerarquía: nombre con peso, precio unitario secundario */
 .cart-item__text {
   display: flex;
   flex-direction: column;
   gap: 3px;
-
-  strong {
-    font-size: 14px;
-    line-height: 1.2;
-  }
+  min-width: 0;
+  // 🔥 Ancho acotado real (ver comentario en .cart-item__info): sin esto
+  // -webkit-line-clamp no tenía dentro de qué envolver.
+  flex: 1 1 auto;
+  max-width: 100%;
 }
 
-/*  PRECIO BASE */
+.cart-item__nombre {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+
+  // Nombre no debe romper el layout compacto: hasta 2 líneas y luego
+  // corta con elipsis. Con nombres repetidos entre variantes (p. ej.
+  // varias "Mochila Urbana" de distinto color) truncar a una sola línea
+  // los volvía indistinguibles entre sí — 2 líneas conserva más contexto
+  // sin convertir la card en un bloque alto.
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/*  PRECIO UNITARIO — texto/color secundario, distinto del subtotal */
 .cart-price {
   font-size: 12px;
-  color: #888;
+  color: $color-gray;
+  font-weight: 400;
 }
 
-/*  SUBTOTAL */
-.cart-subtotal {
-  font-size: 14px;
-  font-weight: 700;
-  color: #000;
+/* 🔥 Controles + subtotal agrupados a la derecha: mismo patrón de fila
+   compacta que ya existía, ahora con el subtotal debajo de los
+   controles para distinguirlo claramente del precio unitario (punto 2)
+   sin ensanchar la fila. */
+.cart-item__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-/*  CONTROLES (+ - 🗑) */
+/*  CONTROLES (- N + 🗑) */
 .cart-item__controls {
   display: flex;
   align-items: center;
   gap: 6px;
+
+  // 🔥 Separación levemente mayor antes de "eliminar" (punto 3): lo aísla
+  // visualmente del grupo -/N/+ sin moverlo de fila y sin agrandar el
+  // ícono — misma alineación vertical (align-items:center del padre).
+  .cart-item__remove {
+    margin-left: 2px;
+  }
 }
 
-/*  BOTONES */
-.cart-item button {
-  cursor: pointer;
-  padding: 4px 7px;
-  border: 1px solid #ccc;
-  background: white;
-}
-
-/* 🔥 Feature 02.6: botones +/- deshabilitados (cantidad mínima=1 o tope
-   de stock/límite de compra alcanzado). Discreto, sin cambiar tamaño. */
-.cart-item button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/*  CANTIDAD */
-.cart-item__controls span {
-  min-width: 22px;
-  text-align: center;
-}
-
-/*  TOTAL FIJO ABAJO */
-.cart-total {
-  padding: 15px 20px;
-  border-top: 1px solid #eee;
-  background: white;
-
-  position: sticky;
-  bottom: 0;
+/* 🔥 Homologación con el selector de cantidad del modal de producto
+   (scss/_modal.scss &__qty-btn): mismo lenguaje visual (círculo, borde
+   fino, fondo transparente, mismos estados hover/disabled), en versión
+   compacta (28px vs. 36px del modal) para no perder la densidad propia
+   del carrito. */
+.cart-item__qty-btn {
+  width: 28px;
+  height: 28px;
+  min-height: 28px; // área táctil razonable en un control compacto
 
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: transparent;
+  color: $color-black;
+  border-radius: 50%;
+  cursor: pointer;
+
+  font-size: 14px;
+  line-height: 1;
+
+  transition: background 0.2s ease;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  // 🔥 Feature 02.6 (sin cambios de comportamiento): "-" se deshabilita
+  // en el mínimo; "+" nunca se deshabilita por tope (debe seguir
+  // disparando el toast de stock/límite vía validarCantidadProducto()).
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.cart-item__qty-value {
+  min-width: 20px;
+  text-align: center;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 🔥 Eliminar: integrado en la misma línea (punto 1: NO se mueve abajo),
+   pero visualmente distinto de +/- (no es un control de cantidad) —
+   discreto, sin borde propio, mismo tamaño de área táctil. */
+.cart-item__remove {
+  // 🔥 Área clickeable/táctil levemente mayor que antes (28px → 32px,
+  // igualada a la altura visual del bloque -/N/+) sin agrandar el ícono
+  // ni pintarlo de rojo: sigue transparente, sin borde propio, mismo
+  // opacity/hover que ya tenía — el tamaño extra es "aire" alrededor del
+  // ícono, no más peso visual.
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  min-width: 32px; // no se achica en flex, mantiene el área táctil
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+
+  border-radius: 50%;
+  transition: background 0.2s ease, opacity 0.2s ease;
+
+  @media (hover: hover) {
+    &:hover {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+}
+
+/*  SUBTOTAL — debe distinguirse claramente del precio unitario */
+.cart-subtotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: $color-black;
+}
+
+/* 🔥 RESUMEN — filas Subtotal/Envío/Total (punto 4). El Total tiene
+   mayor jerarquía visual (tamaño y peso) que Subtotal/Envío. */
+.cart-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+
+  font-size: 13px;
+  color: $color-gray;
+
+  padding: 4px 0;
+
+  strong {
+    color: $color-black;
+    font-weight: 600;
+  }
+}
+
+.cart-summary__row--total {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
 
   font-size: 16px;
-  font-weight: 600;
+  color: $color-black;
 
-  box-shadow: 0 -6px 12px rgba(0,0,0,0.06);
+  strong {
+    font-size: 19px;
+    font-weight: 700;
+  }
+}
+
+/* 📱 RESPONSIVE
+   ==================================================================
+   Breakpoint del carrito: 1024px (documentado en js/carrito.js). Se
+   diferencia del breakpoint general de 768px del resto del sitio a
+   propósito: la Feature 05 pide explícitamente que 768px (tablet) siga
+   comportándose como drawer modal igual que mobile, y que recién por
+   encima de esa franja (1366/1920, "desktop") el carrito sea panel
+   lateral no-modal. */
+@media (max-width: 1024px) {
+  .cart-panel {
+    // Drawer cómodo, nunca una columna angosta (punto 14), sin llegar a
+    // ocupar el 100% en tablet (768px ya tiene espacio de sobra).
+    width: min(440px, 92vw);
+  }
+}
+
+@media (max-width: 480px) {
+  .cart-panel {
+    // 375/390px (punto 14): prácticamente todo el ancho del viewport.
+    width: 100%;
+  }
 }

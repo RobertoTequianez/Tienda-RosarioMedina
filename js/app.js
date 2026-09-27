@@ -932,18 +932,9 @@ function activarFiltros() {
 }
 
 /* CARRITO PANEL */
-const btnCart = document.querySelector(".btn-cart");
-const panel = document.getElementById("cart-panel");
-const closeCart = document.getElementById("close-cart");
-
-if (btnCart && panel && closeCart) {
-
-    btnCart.addEventListener("click", () => {
-        panel.classList.add("active");
-        renderCarrito();
-    });
-
-    closeCart.addEventListener("click", () => {
-        panel.classList.remove("active");
-    });
-}
+// 🔥 Feature 05 (UX/responsive/accesibilidad del carrito): la apertura,
+// cierre, semántica (dialog en mobile/tablet vs panel lateral en
+// desktop), foco, focus trap e inert del carrito ahora viven enteramente
+// en js/carrito.js (abrirCarrito/cerrarCarrito) — ese es el archivo dueño
+// del carrito. Este bloque solo quedaba acá por historia; se elimina para
+// no tener dos puntos de apertura/cierre del mismo panel.
