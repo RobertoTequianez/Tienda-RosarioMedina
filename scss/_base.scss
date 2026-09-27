@@ -48,19 +48,24 @@ body {
    navegación (#inicio, #productos): sin esto, al saltar al ancla el
    header fixed (scss/_header.scss) tapa el título/borde superior de la
    sección. Valores medidos contra la altura real del header renderizado
-   en cada franja (81px en desktop/>768px, 57px en tablet/mobile
-   <=768px, mismo breakpoint que ya usa scss/_header.scss) más un
-   pequeño respiro (~10px) para que el contenido no quede pegado justo
-   debajo del borde del header. */
+   en cada franja.
+   🔥 Ajuste posterior (menú hamburguesa mobile): el breakpoint del
+   header cambió de 768px a 600px (ver scss/_header.scss, razón medida
+   ahí) y la altura mobile real cambió ligeramente (57px -> 63px, el logo
+   ahora ocupa una sola línea completa). El breakpoint de estas reglas se
+   actualiza a juego (599px) para no quedar desalineado del header real:
+   entre 600-768px el header ya mide 81px (tier "desktop"), así que
+   seguir usando 768px aquí habría dejado ese rango con compensación
+   insuficiente (68px < 81px). */
 #inicio,
 #productos {
-  scroll-margin-top: 92px;
+  scroll-margin-top: 92px; // 81px (header >=600px) + ~11px de respiro
 }
 
-@media (max-width: 768px) {
+@media (max-width: 599px) {
   #inicio,
   #productos {
-    scroll-margin-top: 68px;
+    scroll-margin-top: 78px; // 63px (header <600px) + ~15px de respiro
   }
 }
 

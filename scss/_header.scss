@@ -33,7 +33,11 @@
     .nav__list {
       display: flex;
       list-style: none;
-      gap: 20px;
+      // 🔥 Ajuste posterior: gap reducido de 20px a 12px porque
+      // .nav__link ahora tiene más padding propio (8px 6px, punto 4 de
+      // la feature) — la distancia visual total entre textos se
+      // mantiene similar a antes, no se "separan" más los items.
+      gap: 12px;
       margin: 0;
       padding: 0;
     }
@@ -42,25 +46,45 @@
        (antes <li> de texto plano, sin funcionalidad ni foco de
        teclado). Señal de estado discreta: border-bottom sutil en
        hover/focus — nada de colores llamativos, sin scroll-spy (ver
-       comentario en index.html). */
+       comentario en index.html).
+       🔥 Ajuste posterior (navegación "editorial/minimalista"): más
+       padding vertical/horizontal para mejorar el área de click/touch
+       sin separar visualmente los items (el padding reemplaza parte del
+       gap entre <li>, ver más abajo); mismo tratamiento de subrayado en
+       :focus-visible que en :hover (antes solo tenía el anillo genérico
+       de foco); peso de fuente ligeramente mayor en hover/focus como
+       único acento adicional — sin cápsulas, sin fondo, sin scale. */
     .nav__link {
       display: inline-block;
       color: $color-black;
       text-decoration: none;
       font-size: 14px;
-      padding: 4px 2px;
+      font-weight: 400;
+      padding: 8px 6px;
       border-bottom: 1px solid transparent;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, font-weight 0.2s ease;
 
       @media (hover: hover) {
         &:hover {
-          border-bottom-color: rgba(0, 0, 0, 0.35);
+          border-bottom-color: rgba(0, 0, 0, 0.4);
+          font-weight: 500;
         }
+      }
+
+      &:focus-visible {
+        border-bottom-color: rgba(0, 0, 0, 0.4);
+        font-weight: 500;
       }
     }
   }
 
   &__actions {
+    // 🔥 Ajuste posterior: el carrito ahora convive con el botón
+    // hamburguesa (mobile) dentro de &__actions — gap entre ambos.
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
     /* 🔥 Feature 06 — REDISEÑO VISUAL DEL BOTÓN CARRITO (comportamiento
        intacto, es 100% Feature 05). Estructura [SVG + contador] dentro
        del MISMO control (ya lo era), ahora:
@@ -120,58 +144,188 @@
         background: rgba(0, 0, 0, 0.08);
       }
     }
+
+    /* 🔥 Ajuste posterior — BOTÓN HAMBURGUESA. Oculto por defecto
+       (>=600px, breakpoint elegido más abajo): en desktop/tablet ancho
+       la navegación ya va visible en línea, no hace falta.
+       Combina con el carrito (mismo alto, familia de bordes/hover) pero
+       sin ser idéntico: forma cuadrada redondeada (12px, no círculo/16px
+       como el carrito) para no competir visualmente ni confundirse con
+       él. ~44x44px de área interactiva. Ícono de 3 barras vía CSS
+       (nada de SVG externo/librerías/emoji); rota a "X" con aria-expanded
+       — transición respeta prefers-reduced-motion (más abajo). */
+    .header__menu-toggle {
+      display: none; // se habilita en la media query mobile
+
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+
+      width: 42px;
+      height: 42px;
+      padding: 0;
+
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      background: white;
+      border-radius: 12px;
+      cursor: pointer;
+
+      @media (hover: hover) {
+        &:hover {
+          background: rgba(0, 0, 0, 0.05);
+          border-color: rgba(0, 0, 0, 0.25);
+        }
+      }
+
+      &:active {
+        background: rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    .header__menu-bar {
+      width: 18px;
+      height: 2px;
+      background: $color-black;
+      border-radius: 1px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .header__menu-bar {
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+    }
+
+    // ☰ → X cuando el menú está abierto (aria-expanded sincronizado por JS)
+    .header__menu-toggle[aria-expanded="true"] {
+      .header__menu-bar:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+      }
+      .header__menu-bar:nth-child(2) {
+        opacity: 0;
+      }
+      .header__menu-bar:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+      }
+    }
   }
 }
 
-/* 🔥 FIX MOBILE */
-@media (max-width: 768px) {
+/* 📱 Feature 06 (ajuste) — BREAKPOINT DEL HEADER
+   ==================================================================
+   Medido empíricamente (no se asumió 768px "por convención"): con el
+   patrón de 3 items de navegación a tamaño desktop (14px, gap 12px) +
+   logo + carrito, el conjunto ya se queda sin aire real por debajo de
+   ~600px — a 480px sólo quedan ~6-14px libres a cada lado del bloque de
+   navegación (visualmente ya apretado), mientras que a 600px hay
+   ~66-74px libres (respira con comodidad). Por eso el corte es 600px:
+   por debajo, header compacto + hamburguesa; desde 600px en adelante,
+   navegación horizontal visible (igual que antes, sin usar hamburguesa
+   en tablet/desktop). Documentado también en el reporte de esta ronda.
+
+   🔥 PENDIENTE (Feature 07): este valor (600px) fue medido y validado
+   con los 3 items actuales de navegación (Inicio/Productos/Ofertas). En
+   Feature 07 se agregará un cuarto enlace ("Nosotros", ver index.html)
+   cuando exista su sección real — al agregarlo, el patrón desktop pasa
+   a Inicio | Productos | Ofertas | Nosotros | Carrito, que necesita más
+   ancho horizontal que el medido acá. El breakpoint DEBE volver a
+   medirse en ese momento (mismo método: forzar estilos desktop y medir
+   el espacio libre real en cada ancho candidato) — no asumir que 600px
+   sigue siendo válido con 4 items en vez de 3. No se cambia ahora. */
+@media (max-width: 599px) {
   .header__container {
     padding: 10px 15px;
   }
 
+  /* 🔥 Ajuste posterior — LOGO MOBILE: "TIENDA ROSARIO" debe quedar en
+     una sola línea (antes max-width:90px + line-height:1.2 permitía
+     2 líneas). Con la navegación ya fuera de esta fila (ahora es un
+     menú desplegable, ver más abajo) sobra espacio para el logo
+     completo sin comprimirlo en exceso. */
   .header__logo {
-    font-size: 12px;
-    max-width: 90px;
-    line-height: 1.2;
-  }
-
-  .header__nav {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    // 🔥 Feature 06 (375px): sin este min-width:0 un contenedor flex con
-    // flex:1 puede no encogerse por debajo del ancho de su contenido
-    // (white-space:nowrap en .nav__list), empujando el último enlace
-    // ("Ofertas") a solaparse por ~2px con el botón del carrito.
-    min-width: 0;
-  }
-
-  .nav__list {
-    display: flex;
-    gap: 8px;
-    font-size: 12.5px;
+    font-size: 13px;
     white-space: nowrap;
   }
 
+  /* 🔥 Ajuste posterior — NAVEGACIÓN: ya NO se muestra en la fila
+     principal en mobile. El mismo <nav>/<ul> (ver index.html) pasa a
+     ser un panel desplegable VERTICAL, a todo el ancho, pegado justo
+     debajo del header (position:absolute respecto a .header, que ya es
+     position:fixed — por eso no necesita position:relative en
+     .header__container). Empieza oculto (display:none) y JS
+     (js/app.js) alterna header__nav--open al togglear el botón
+     hamburguesa. No es un drawer lateral (ese patrón ya lo usa el
+     carrito, Feature 05) ni overlay de pantalla completa: mismo fondo
+     que el header, sombra muy discreta para separarlo del contenido de
+     abajo, bordes mínimos. Al estar cerrado no ocupa espacio en el
+     flujo (no empuja el header ni cambia su altura). */
+  .header__nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+
+    background: #F9E2E7;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+
+    &.header__nav--open {
+      display: block;
+    }
+  }
+
+  .nav__list {
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 0;
+  }
+
   .nav__list li {
-    flex-shrink: 0;
+    width: 100%;
+  }
+
+  // 🔥 Dentro del menú desplegable los links pasan a ocupar todo el
+  // ancho (fáciles de tocar, punto 10) con separación discreta entre
+  // ellos — ya no llevan el subrayado de hover/focus de la versión en
+  // línea (no aporta nada en un layout vertical de ancho completo);
+  // usan un fondo sutil en su lugar, mismo lenguaje que btn-cart/menu-toggle.
+  .header__nav .nav__link {
+    display: block;
+    width: 100%;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 15px;
+
+    @media (hover: hover) {
+      &:hover {
+        border-bottom-color: rgba(0, 0, 0, 0.06); // no aplica el subrayado inferior acá
+        background: rgba(0, 0, 0, 0.04);
+        font-weight: 400; // sin el énfasis de peso de la versión desktop
+      }
+    }
+
+    &:focus-visible {
+      border-bottom-color: rgba(0, 0, 0, 0.06);
+      background: rgba(0, 0, 0, 0.04);
+      font-weight: 400;
+    }
+  }
+
+  .nav__list li:last-child .nav__link {
+    border-bottom: none;
   }
 
   .header__actions {
-    min-width: 60px;
-    // 🔥 Feature 06 (375px): separación mínima garantizada respecto a la
-    // navegación, sin depender de la aritmética exacta de flex-grow
-    // entre logo/nav/carrito (a 375px el enlace "Ofertas" quedaba a ~2px
-    // del botón del carrito, prácticamente tocándose).
-    margin-left: 8px;
     flex-shrink: 0;
-    display: flex;
-    justify-content: flex-end;
 
     .btn-cart {
+      // 🔥 Botón carrito: SIN cambios visuales (tamaño/forma/colores) —
+      // idéntico al que ya estaba aprobado para mobile, solo cambia de
+      // posición dentro de &__actions (ahora junto al hamburguesa).
       font-size: 11px;
       padding: 6px 10px;
-      min-height: 36px; // touch target razonable en el espacio reducido del header mobile
+      min-height: 36px;
       gap: 5px;
 
       svg {
@@ -180,9 +334,20 @@
       }
 
       span {
-        // Mismo motivo que en la regla base: ancho reservado para "10+".
         min-width: 20px;
       }
     }
+
+    .header__menu-toggle {
+      display: flex; // visible solo en este breakpoint
+    }
+  }
+}
+
+@media (min-width: 600px) {
+  // Hamburguesa nunca visible en tablet/desktop — navegación horizontal
+  // de siempre se mantiene.
+  .header__menu-toggle {
+    display: none;
   }
 }

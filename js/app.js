@@ -227,17 +227,112 @@ document.addEventListener("DOMContentLoaded", () => {
    vacía solo para justificar el enlace. */
 function activarNavegacion() {
     const enlaceOfertas = document.getElementById("nav-ofertas");
-    if (!enlaceOfertas) return;
+    if (enlaceOfertas) {
+        enlaceOfertas.addEventListener("click", () => {
+            // No se hace preventDefault(): el navegador igual sigue el
+            // href="#productos" de forma nativa: nunca es un enlace roto,
+            // incluso si este script fallara en cargar.
+            mostrarToast(null, {
+                tipo: "info",
+                mensaje: "Por el momento no hay ofertas disponibles.",
+            });
+        });
+    }
 
-    enlaceOfertas.addEventListener("click", () => {
-        // No se hace preventDefault(): el navegador igual sigue el
-        // href="#productos" de forma nativa: nunca es un enlace roto,
-        // incluso si este script fallara en cargar.
-        mostrarToast(null, {
-            tipo: "info",
-            mensaje: "Por el momento no hay ofertas disponibles.",
+    activarMenuMobile();
+}
+
+/* 🔥 Feature 06 (ajuste posterior) — MENÚ MOBILE (<600px, ver
+   scss/_header.scss). El mismo <nav>/<ul> del header (id="header-nav")
+   se muestra como panel desplegable vertical; en tablet/desktop
+   (>=600px) el CSS lo mantiene siempre visible en línea y este menú
+   nunca llega a "abrirse" (el botón hamburguesa está oculto ahí, ver
+   activarMenuMobile más abajo — no hay necesidad de comprobar el ancho
+   en JS).
+   NO es un focus trap completo (no es un modal, punto 13): los links
+   son tabulables normalmente, Escape cierra y devuelve el foco al botón
+   hamburguesa, aria-expanded se mantiene sincronizado con el estado
+   visual real en todo momento. */
+let menuMobileAbierto = false;
+let menuToggleBtn;
+let headerNavEl;
+
+function activarMenuMobile() {
+    menuToggleBtn = document.getElementById("menu-toggle");
+    headerNavEl = document.getElementById("header-nav");
+    if (!menuToggleBtn || !headerNavEl) return;
+
+    menuToggleBtn.addEventListener("click", () => {
+        if (menuMobileAbierto) {
+            cerrarMenuMobile();
+        } else {
+            abrirMenuMobile();
+        }
+    });
+
+    // Cerrar el menú al seleccionar cualquier link de navegación
+    // (Inicio/Productos/Ofertas) — el anchor de todas formas navega
+    // normalmente, esto solo limpia el estado visual del menú.
+    headerNavEl.querySelectorAll(".nav__link").forEach((link) => {
+        link.addEventListener("click", () => {
+            if (menuMobileAbierto) cerrarMenuMobile();
         });
     });
+
+    // Escape cierra y devuelve el foco al botón hamburguesa (punto 13).
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && menuMobileAbierto) {
+            cerrarMenuMobile({ devolverFoco: true });
+        }
+    });
+
+    // Click fuera del menú/botón lo cierra (punto 12) — implementación
+    // simple, sin interferir con carrito/modal: solo escucha mientras el
+    // menú está realmente abierto (se agrega/quita el listener en
+    // abrir/cerrarMenuMobile, no queda escuchando todo el tiempo).
+}
+
+function manejarClickFueraDelMenu(e) {
+    if (!headerNavEl || !menuToggleBtn) return;
+    if (headerNavEl.contains(e.target) || menuToggleBtn.contains(e.target)) return;
+    cerrarMenuMobile();
+}
+
+function abrirMenuMobile() {
+    if (!menuToggleBtn || !headerNavEl || menuMobileAbierto) return;
+
+    // 🔥 Punto 14: si el carrito está abierto, cerrarlo primero — nunca
+    // deben quedar el menú y el drawer del carrito abiertos a la vez.
+    if (typeof cerrarCarrito === "function") {
+        const panel = document.getElementById("cart-panel");
+        if (panel && panel.classList.contains("active")) {
+            cerrarCarrito();
+        }
+    }
+
+    menuMobileAbierto = true;
+    headerNavEl.classList.add("header__nav--open");
+    menuToggleBtn.setAttribute("aria-expanded", "true");
+    menuToggleBtn.setAttribute("aria-label", "Cerrar menú");
+
+    // El listener de click-outside se agrega en el siguiente tick para
+    // no capturar el mismo click que acaba de abrir el menú.
+    setTimeout(() => document.addEventListener("click", manejarClickFueraDelMenu), 0);
+}
+
+function cerrarMenuMobile(opciones = {}) {
+    if (!menuToggleBtn || !headerNavEl || !menuMobileAbierto) return;
+
+    menuMobileAbierto = false;
+    headerNavEl.classList.remove("header__nav--open");
+    menuToggleBtn.setAttribute("aria-expanded", "false");
+    menuToggleBtn.setAttribute("aria-label", "Abrir menú");
+
+    document.removeEventListener("click", manejarClickFueraDelMenu);
+
+    if (opciones.devolverFoco) {
+        menuToggleBtn.focus();
+    }
 }
 
 /* CREAR CARD */
@@ -320,6 +415,11 @@ function crearCard(producto, esPrimeraFila) {
 // cerrar. Si no se pasa explícitamente, se usa el elemento con foco actual
 // como resguardo.
 function abrirModal(producto, origen) {
+    // 🔥 Ajuste posterior (Feature 06, punto 15): el menú mobile no debe
+    // quedar flotando por encima del modal de producto — se cierra antes
+    // de abrir el modal, sin tocar el focus trap del modal en sí.
+    if (typeof cerrarMenuMobile === "function") cerrarMenuMobile();
+
     elementoOrigenModal = origen || document.activeElement || null;
 
     bloquearScrollFondo();

@@ -736,6 +736,15 @@ function quitarInertFondoCarrito() {
 function abrirCarrito(origen) {
     if (!cartPanelEl) return;
 
+    // 🔥 Ajuste posterior (Feature 06, punto 14): si el menú mobile está
+    // abierto, cerrarlo primero — nunca deben quedar el menú y el drawer
+    // del carrito abiertos a la vez (estados visualmente confusos).
+    // typeof-guard: cerrarMenuMobile vive en js/app.js, que se carga
+    // DESPUÉS de este archivo, pero la llamada real ocurre en un click
+    // (tiempo de ejecución, no de parseo), cuando ambos scripts ya
+    // están cargados — mismo patrón seguro usado en el resto del sitio.
+    if (typeof cerrarMenuMobile === "function") cerrarMenuMobile();
+
     elementoOrigenCarrito = origen || document.activeElement || null;
 
     renderCarrito();

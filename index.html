@@ -59,17 +59,18 @@
             TIENDA ROSARIO
         </a>
 
-        <!-- 🔥 Feature 06: navegación real con anchors nativos, sin JS
-             necesario para el desplazamiento en sí (scroll-behavior:
-             smooth + scroll-margin-top en scss/_base.scss y
-             scss/_header.scss se encargan). Se evaluó scroll-spy (estado
-             activo según sección visible) y se descartó a propósito: la
-             navegación funcional es la prioridad y scroll-spy agrega
-             complejidad (IntersectionObserver, casos de borde de
-             secciones cortas) sin la cual el header sigue siendo
-             completamente utilizable — documentado también en el
-             reporte de la feature. -->
-        <nav class="header__nav" aria-label="Navegación principal">
+        <!-- 🔥 Feature 06 (ajuste): el MISMO <nav>/<ul> sirve para el
+             patrón desktop (fila horizontal, >=600px, ver breakpoint
+             elegido en scss/_header.scss) y para el menú desplegable
+             mobile (<600px) — evita duplicar marcado/listeners (el toast
+             de "Ofertas" sigue siendo el mismo #nav-ofertas de siempre).
+             Solo CSS decide si se ve como fila inline o como panel
+             desplegable vertical; en mobile arranca cerrado
+             (id="header-nav" referenciado por aria-controls del botón
+             hamburguesa, más abajo). Se evaluó scroll-spy (estado activo
+             según sección visible) y se descartó a propósito: la
+             navegación funcional es la prioridad. -->
+        <nav class="header__nav" id="header-nav" aria-label="Navegación principal">
             <ul class="nav__list">
                 <li><a href="#inicio" class="nav__link">Inicio</a></li>
                 <li><a href="#productos" class="nav__link">Productos</a></li>
@@ -80,7 +81,10 @@
                      "Productos") y, además, informa brevemente mediante
                      el sistema de toast ya existente (ver
                      js/app.js). Nunca es un enlace roto ni una sección
-                     vacía creada solo para justificar el ítem de menú. -->
+                     vacía creada solo para justificar el ítem de menú.
+                     "Nosotros" NO se agrega todavía: no existe una
+                     sección real — se documenta como pendiente de
+                     Feature 07 (ver scss/_header.scss y js/app.js). -->
                 <li><a href="#productos" class="nav__link" id="nav-ofertas">Ofertas</a></li>
             </ul>
         </nav>
@@ -91,7 +95,11 @@
                  focus trap, devolución de foco) no cambia. El contador
                  (#cart-count) sigue integrado DENTRO del mismo control
                  junto al SVG (ya lo estaba); aria-label ahora es dinámico
-                 y lo actualiza js/carrito.js (actualizarContador()). -->
+                 y lo actualiza js/carrito.js (actualizarContador()).
+                 🔥 Ajuste posterior: visualmente IDÉNTICO en desktop y
+                 mobile — solo puede cambiar de POSICIÓN dentro del header
+                 (ahora convive con el botón hamburguesa dentro de
+                 &__actions en mobile). -->
             <button class="btn-cart" aria-label="Abrir carrito, vacío">
 
   <svg xmlns="http://www.w3.org/2000/svg"
@@ -112,6 +120,25 @@
   <span id="cart-count" aria-hidden="true">0</span>
 
 </button>
+
+            <!-- 🔥 Feature 06 (ajuste): botón hamburguesa — solo visible
+                 por debajo del breakpoint elegido (ver scss/_header.scss).
+                 Botón real (no <div onclick>), aria-expanded/aria-controls
+                 sincronizados por JS (js/app.js). Ícono con 3 barras CSS
+                 simples (sin SVG externo, sin librerías) que rotan a "X"
+                 — transición respeta prefers-reduced-motion. -->
+            <button
+                type="button"
+                class="header__menu-toggle"
+                id="menu-toggle"
+                aria-label="Abrir menú"
+                aria-expanded="false"
+                aria-controls="header-nav"
+            >
+                <span class="header__menu-bar" aria-hidden="true"></span>
+                <span class="header__menu-bar" aria-hidden="true"></span>
+                <span class="header__menu-bar" aria-hidden="true"></span>
+            </button>
         </div>
 
     </div>
