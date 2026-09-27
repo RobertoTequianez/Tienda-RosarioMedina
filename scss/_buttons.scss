@@ -6,14 +6,49 @@
   cursor: pointer;
 }
 
+/* 🔥 Feature 06: ahora es <a> (navegación hacia wa.me), no <button> —
+   mismo círculo verde flotante de siempre. Ícono cambia de emoji (💬) a
+   SVG inline simple (stroke, currentColor) por consistencia con el resto
+   de íconos del sitio (carrito, flechas del carrusel) — no es el
+   logotipo oficial de WhatsApp, es un ícono genérico de "mensaje/chat"
+   sobre el mismo verde de marca ya usado en el sitio desde antes de esta
+   feature. Oculto por defecto vía `hidden` en index.html hasta que
+   js/whatsapp.js confirme un número real configurado. */
 .whatsapp-btn {
   position: fixed;
   bottom: 20px;
   right: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 52px;
+  height: 52px; // touch target cómodo, cercano a 44x44px
+  padding: 0;
+
   background: #25D366;
   color: white;
   border: none;
-  padding: 15px;
   border-radius: 50%;
   cursor: pointer;
+
+  transition: background 0.2s ease;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background: #1ebc59; // verde levemente más oscuro, mismo tono de marca
+    }
+  }
+
+  // Mientras está oculto (`hidden`, sin número real configurado) no debe
+  // participar en el layout ni quedar accidentalmente enfocable.
+  &[hidden] {
+    display: none;
+  }
 }

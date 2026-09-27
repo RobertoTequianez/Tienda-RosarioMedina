@@ -211,7 +211,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
     actualizarContador();
     renderCarrito();
+
+    activarNavegacion();
 });
+
+/* 🔥 Feature 06 — NAVEGACIÓN DEL HEADER
+   "Inicio"/"Productos" y el logo son anchors nativos (href="#inicio"/
+   "#productos"): el desplazamiento en sí no necesita JS (scroll-behavior:
+   smooth + scroll-margin-top, ver scss/_base.scss y scss/_products.scss).
+   Lo único que necesita JS es "Ofertas": no existe todavía un modelo real
+   de ofertas (sin flag/precio anterior/descuento en data/productos.js,
+   confirmado en la auditoría), así que además de llevar al catálogo real
+   (mismo href="#productos"), informa brevemente con el sistema de toast
+   ya existente — nunca se inventa una promoción ni se crea una sección
+   vacía solo para justificar el enlace. */
+function activarNavegacion() {
+    const enlaceOfertas = document.getElementById("nav-ofertas");
+    if (!enlaceOfertas) return;
+
+    enlaceOfertas.addEventListener("click", () => {
+        // No se hace preventDefault(): el navegador igual sigue el
+        // href="#productos" de forma nativa: nunca es un enlace roto,
+        // incluso si este script fallara en cargar.
+        mostrarToast(null, {
+            tipo: "info",
+            mensaje: "Por el momento no hay ofertas disponibles.",
+        });
+    });
+}
 
 /* CREAR CARD */
 function crearCard(producto, esPrimeraFila) {
@@ -894,7 +921,10 @@ function desplazarCarruselA(indice) {
 
 /* RENDER PRODUCTOS */
 function renderProductos() {
-    const contenedor = document.getElementById("productos");
+    // 🔥 Feature 06: id renombrado de "productos" a "productos-grid" —
+    // el id "productos" ahora vive en la <section> (destino real del
+    // enlace de navegación "Productos"/"Ofertas"), no en el grid interno.
+    const contenedor = document.getElementById("productos-grid");
     if (!contenedor) return;
 
     contenedor.innerHTML = "";

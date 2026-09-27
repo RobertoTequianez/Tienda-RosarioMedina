@@ -14,9 +14,19 @@
     padding: $spacing $spacing * 2;
   }
 
+  /* 🔥 Feature 06: "TIENDA ROSARIO" ahora es <a href="#inicio"> (antes
+     era un <div> sin funcionalidad) — mismo aspecto visual de siempre,
+     solo se neutraliza el subrayado/color de enlace por defecto para
+     que se vea exactamente igual que antes. */
   &__logo {
+    // display:inline-block: ahora es <a> (inline por defecto), y
+    // necesita aceptar max-width/line-height en mobile igual que antes
+    // cuando era un <div>.
+    display: inline-block;
     font-weight: bold;
     letter-spacing: 2px;
+    color: $color-black;
+    text-decoration: none;
   }
 
   &__nav {
@@ -24,37 +34,90 @@
       display: flex;
       list-style: none;
       gap: 20px;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 🔥 Feature 06: Inicio/Productos/Ofertas ahora son <a> reales
+       (antes <li> de texto plano, sin funcionalidad ni foco de
+       teclado). Señal de estado discreta: border-bottom sutil en
+       hover/focus — nada de colores llamativos, sin scroll-spy (ver
+       comentario en index.html). */
+    .nav__link {
+      display: inline-block;
+      color: $color-black;
+      text-decoration: none;
+      font-size: 14px;
+      padding: 4px 2px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+
+      @media (hover: hover) {
+        &:hover {
+          border-bottom-color: rgba(0, 0, 0, 0.35);
+        }
+      }
     }
   }
 
   &__actions {
+    /* 🔥 Feature 06 — REDISEÑO VISUAL DEL BOTÓN CARRITO (comportamiento
+       intacto, es 100% Feature 05). Estructura [SVG + contador] dentro
+       del MISMO control (ya lo era), ahora:
+       - más redondeado pero estático: border-radius 16px (no cápsula),
+         se siente como un control fijo del header, no una notificación
+         flotante.
+       - sin hover que invierte todo el botón a negro (efecto llamativo
+         que no pedía la feature): hover/active ahora son un cambio de
+         fondo sutil, consistente con nav__link/&__close del carrito.
+       - ancho estable entre 0/1/9/10+: el contador tiene un min-width
+         reservado y el texto se topa en "10+" (ver actualizarContador()
+         en js/carrito.js) para que el control nunca "salte" de ancho.
+       - sin badge/círculo flotante ni animaciones (rebote/pulso/scale):
+         el contador vive en flujo normal dentro del botón, igual que ya
+         ocurría. */
     .btn-cart {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
 
-      border: 1px solid $color-black;
+      border: 1px solid rgba(0, 0, 0, 0.15);
       background: white;
-      padding: 6px 10px;
+      padding: 9px 12px;
+      min-height: 40px; // touch target cómodo (cerca de 44px con el padding del header)
       cursor: pointer;
 
-      font-size: 12px;
-      border-radius: 20px;
+      font-size: 13px;
+      border-radius: 16px;
 
-      transition: all 0.25s ease;
+      transition: background 0.2s ease, border-color 0.2s ease;
 
       svg {
-        width: 18px;
-        height: 18px;
+        width: 19px;
+        height: 19px;
+        flex-shrink: 0;
       }
 
       span {
-        font-weight: 500;
+        font-weight: 600;
+        // 🔥 Ancho reservado para el estado más largo posible ("10+",
+        // el tope del contador — ver actualizarContador() en
+        // js/carrito.js) para que el botón NO cambie de ancho entre
+        // 0/1/9/10+: reserva el espacio desde el primer render, no solo
+        // cuando el número ya es largo.
+        min-width: 24px;
+        text-align: center;
       }
 
-      &:hover {
-        background: $color-black;
-        color: $color-white;
+      @media (hover: hover) {
+        &:hover {
+          background: rgba(0, 0, 0, 0.05);
+          border-color: rgba(0, 0, 0, 0.25);
+        }
+      }
+
+      &:active {
+        background: rgba(0, 0, 0, 0.08);
       }
     }
   }
@@ -76,12 +139,17 @@
     flex: 1;
     display: flex;
     justify-content: center;
+    // 🔥 Feature 06 (375px): sin este min-width:0 un contenedor flex con
+    // flex:1 puede no encogerse por debajo del ancho de su contenido
+    // (white-space:nowrap en .nav__list), empujando el último enlace
+    // ("Ofertas") a solaparse por ~2px con el botón del carrito.
+    min-width: 0;
   }
 
   .nav__list {
     display: flex;
-    gap: 10px;
-    font-size: 13px;
+    gap: 8px;
+    font-size: 12.5px;
     white-space: nowrap;
   }
 
@@ -91,16 +159,29 @@
 
   .header__actions {
     min-width: 60px;
+    // 🔥 Feature 06 (375px): separación mínima garantizada respecto a la
+    // navegación, sin depender de la aritmética exacta de flex-grow
+    // entre logo/nav/carrito (a 375px el enlace "Ofertas" quedaba a ~2px
+    // del botón del carrito, prácticamente tocándose).
+    margin-left: 8px;
+    flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
 
     .btn-cart {
       font-size: 11px;
-      padding: 4px 8px;
+      padding: 6px 10px;
+      min-height: 36px; // touch target razonable en el espacio reducido del header mobile
+      gap: 5px;
 
       svg {
         width: 16px;
         height: 16px;
+      }
+
+      span {
+        // Mismo motivo que en la regla base: ancho reservado para "10+".
+        min-width: 20px;
       }
     }
   }

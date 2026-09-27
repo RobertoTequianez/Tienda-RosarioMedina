@@ -14,6 +14,16 @@ html {
   overflow-x: hidden;
 }
 
+/* 🔥 Feature 06 — SCROLL SUAVE hacia #inicio/#productos, respetando
+   prefers-reduced-motion (Feature 03/041): cuando la persona prefiere
+   reducir movimiento, NO se fuerza la animación — el salto es
+   instantáneo (comportamiento nativo por defecto, sin esta regla). CSS
+   puro, sin JS ni librerías. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
 body {
   margin: 0;
   padding: 0;
@@ -27,6 +37,25 @@ body {
 @media (max-width: 768px) {
   body {
     padding-top: 40px;
+  }
+}
+/* 🔥 Feature 06 — scroll-margin-top en los destinos reales de la
+   navegación (#inicio, #productos): sin esto, al saltar al ancla el
+   header fixed (scss/_header.scss) tapa el título/borde superior de la
+   sección. Valores medidos contra la altura real del header renderizado
+   en cada franja (81px en desktop/>768px, 57px en tablet/mobile
+   <=768px, mismo breakpoint que ya usa scss/_header.scss) más un
+   pequeño respiro (~10px) para que el contenido no quede pegado justo
+   debajo del borde del header. */
+#inicio,
+#productos {
+  scroll-margin-top: 92px;
+}
+
+@media (max-width: 768px) {
+  #inicio,
+  #productos {
+    scroll-margin-top: 68px;
   }
 }
 /* 🔥 SCROLL LOCK DEL FONDO (Feature 02.4) — modal de producto abierto.
@@ -75,37 +104,95 @@ textarea:focus-visible,
   align-items: center;
   padding: 20px 40px;
 }
+.header {
+  /* 🔥 Feature 06: "TIENDA ROSARIO" ahora es <a href="#inicio"> (antes
+     era un <div> sin funcionalidad) — mismo aspecto visual de siempre,
+     solo se neutraliza el subrayado/color de enlace por defecto para
+     que se vea exactamente igual que antes. */
+}
 .header__logo {
+  display: inline-block;
   font-weight: bold;
   letter-spacing: 2px;
+  color: #111;
+  text-decoration: none;
 }
 .header__nav .nav__list {
   display: flex;
   list-style: none;
   gap: 20px;
+  margin: 0;
+  padding: 0;
+}
+.header__nav {
+  /* 🔥 Feature 06: Inicio/Productos/Ofertas ahora son <a> reales
+     (antes <li> de texto plano, sin funcionalidad ni foco de
+     teclado). Señal de estado discreta: border-bottom sutil en
+     hover/focus — nada de colores llamativos, sin scroll-spy (ver
+     comentario en index.html). */
+}
+.header__nav .nav__link {
+  display: inline-block;
+  color: #111;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 4px 2px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+@media (hover: hover) {
+  .header__nav .nav__link:hover {
+    border-bottom-color: rgba(0, 0, 0, 0.35);
+  }
+}
+.header__actions {
+  /* 🔥 Feature 06 — REDISEÑO VISUAL DEL BOTÓN CARRITO (comportamiento
+     intacto, es 100% Feature 05). Estructura [SVG + contador] dentro
+     del MISMO control (ya lo era), ahora:
+     - más redondeado pero estático: border-radius 16px (no cápsula),
+       se siente como un control fijo del header, no una notificación
+       flotante.
+     - sin hover que invierte todo el botón a negro (efecto llamativo
+       que no pedía la feature): hover/active ahora son un cambio de
+       fondo sutil, consistente con nav__link/&__close del carrito.
+     - ancho estable entre 0/1/9/10+: el contador tiene un min-width
+       reservado y el texto se topa en "10+" (ver actualizarContador()
+       en js/carrito.js) para que el control nunca "salte" de ancho.
+     - sin badge/círculo flotante ni animaciones (rebote/pulso/scale):
+       el contador vive en flujo normal dentro del botón, igual que ya
+       ocurría. */
 }
 .header__actions .btn-cart {
   display: flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid #111;
+  gap: 7px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   background: white;
-  padding: 6px 10px;
+  padding: 9px 12px;
+  min-height: 40px;
   cursor: pointer;
-  font-size: 12px;
-  border-radius: 20px;
-  transition: all 0.25s ease;
+  font-size: 13px;
+  border-radius: 16px;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 .header__actions .btn-cart svg {
-  width: 18px;
-  height: 18px;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
 }
 .header__actions .btn-cart span {
-  font-weight: 500;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
 }
-.header__actions .btn-cart:hover {
-  background: #111;
-  color: #fff;
+@media (hover: hover) {
+  .header__actions .btn-cart:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.25);
+  }
+}
+.header__actions .btn-cart:active {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* 🔥 FIX MOBILE */
@@ -122,11 +209,12 @@ textarea:focus-visible,
     flex: 1;
     display: flex;
     justify-content: center;
+    min-width: 0;
   }
   .nav__list {
     display: flex;
-    gap: 10px;
-    font-size: 13px;
+    gap: 8px;
+    font-size: 12.5px;
     white-space: nowrap;
   }
   .nav__list li {
@@ -134,16 +222,23 @@ textarea:focus-visible,
   }
   .header__actions {
     min-width: 60px;
+    margin-left: 8px;
+    flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
   }
   .header__actions .btn-cart {
     font-size: 11px;
-    padding: 4px 8px;
+    padding: 6px 10px;
+    min-height: 36px;
+    gap: 5px;
   }
   .header__actions .btn-cart svg {
     width: 16px;
     height: 16px;
+  }
+  .header__actions .btn-cart span {
+    min-width: 20px;
   }
 }
 .hero-video {
@@ -358,16 +453,42 @@ textarea:focus-visible,
   cursor: pointer;
 }
 
+/* 🔥 Feature 06: ahora es <a> (navegación hacia wa.me), no <button> —
+   mismo círculo verde flotante de siempre. Ícono cambia de emoji (💬) a
+   SVG inline simple (stroke, currentColor) por consistencia con el resto
+   de íconos del sitio (carrito, flechas del carrusel) — no es el
+   logotipo oficial de WhatsApp, es un ícono genérico de "mensaje/chat"
+   sobre el mismo verde de marca ya usado en el sitio desde antes de esta
+   feature. Oculto por defecto vía `hidden` en index.html hasta que
+   js/whatsapp.js confirme un número real configurado. */
 .whatsapp-btn {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
   background: #25D366;
   color: white;
   border: none;
-  padding: 15px;
   border-radius: 50%;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+.whatsapp-btn svg {
+  width: 26px;
+  height: 26px;
+}
+@media (hover: hover) {
+  .whatsapp-btn:hover {
+    background: #1ebc59;
+  }
+}
+.whatsapp-btn[hidden] {
+  display: none;
 }
 
 /* 🔥 Feature 05 — CARRITO: UX, RESPONSIVE Y ACCESIBILIDAD

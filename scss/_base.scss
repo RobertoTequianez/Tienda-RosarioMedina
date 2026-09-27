@@ -15,6 +15,17 @@ html {
   overflow-x: hidden;
 }
 
+/* 🔥 Feature 06 — SCROLL SUAVE hacia #inicio/#productos, respetando
+   prefers-reduced-motion (Feature 03/041): cuando la persona prefiere
+   reducir movimiento, NO se fuerza la animación — el salto es
+   instantáneo (comportamiento nativo por defecto, sin esta regla). CSS
+   puro, sin JS ni librerías. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -30,6 +41,26 @@ body {
 @media (max-width: 768px) {
   body {
     padding-top: 40px; // 🔥 ajusta para mobile
+  }
+}
+
+/* 🔥 Feature 06 — scroll-margin-top en los destinos reales de la
+   navegación (#inicio, #productos): sin esto, al saltar al ancla el
+   header fixed (scss/_header.scss) tapa el título/borde superior de la
+   sección. Valores medidos contra la altura real del header renderizado
+   en cada franja (81px en desktop/>768px, 57px en tablet/mobile
+   <=768px, mismo breakpoint que ya usa scss/_header.scss) más un
+   pequeño respiro (~10px) para que el contenido no quede pegado justo
+   debajo del borde del header. */
+#inicio,
+#productos {
+  scroll-margin-top: 92px;
+}
+
+@media (max-width: 768px) {
+  #inicio,
+  #productos {
+    scroll-margin-top: 68px;
   }
 }
 

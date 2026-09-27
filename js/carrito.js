@@ -197,12 +197,41 @@ function guardarCarrito() {
     localStorage.setItem("carrito", JSON.stringify(carrito));
 }
 
+/* 🔥 Feature 06 (ajuste visual del botón carrito): el SIGNIFICADO del
+   contador NO cambia — sigue siendo la suma de cantidades (unidades
+   totales), no la cantidad de productos distintos/líneas, exactamente
+   como ya funcionaba antes de esta feature.
+   Lo único nuevo es presentación: (1) el texto visible se topa en "10+"
+   para que el control nunca crezca de ancho de forma ilimitada con
+   carritos grandes (el número real y completo sigue disponible en el
+   aria-label para tecnología asistiva, sin topar en "10+"); (2) el
+   aria-label del botón se vuelve dinámico y descriptivo en vez del
+   aria-label genérico y estático que tenía antes.
+   🔥 Corrección posterior: el aria-label decía "N productos", pero el
+   contador representa UNIDADES totales, no productos distintos — con 2
+   unidades del mismo producto, "2 productos" describía mal lo que hay
+   en el carrito. Se corrige a "artículos", que no implica variedad de
+   productos distintos, manteniendo intacto el significado numérico. */
 function actualizarContador() {
     const contador = document.getElementById("cart-count");
+    const boton = document.querySelector(".btn-cart");
     if (!contador) return;
 
     const total = carrito.reduce((acc, p) => acc + p.cantidad, 0);
-    contador.textContent = total;
+
+    contador.textContent = total > 9 ? "10+" : String(total);
+
+    if (boton) {
+        let etiqueta;
+        if (total === 0) {
+            etiqueta = "Abrir carrito, vacío";
+        } else if (total === 1) {
+            etiqueta = "Abrir carrito, 1 artículo";
+        } else {
+            etiqueta = `Abrir carrito, ${total} artículos`;
+        }
+        boton.setAttribute("aria-label", etiqueta);
+    }
 }
 
 /* 🔥 CALCULAR TOTAL PRODUCTOS */
@@ -311,6 +340,15 @@ function mostrarToast(nombreProducto, opciones = {}) {
                 <strong>Límite de compra alcanzado</strong>
                 <span>Para solicitar una cantidad mayor, contáctanos por WhatsApp.</span>
             `;
+            break;
+
+        // 🔥 Feature 06: mensaje informativo genérico y breve, reutilizable
+        // (por ahora lo usa el enlace "Ofertas" del header cuando todavía
+        // no existe un modelo real de ofertas). No participa en ninguna
+        // regla de stock/carrito — es solo texto, provisto siempre por
+        // quien llama, nunca inventado aquí.
+        case "info":
+            html = `<strong>${opciones.mensaje || ""}</strong>`;
             break;
 
         case "exito":
