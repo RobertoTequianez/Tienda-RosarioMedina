@@ -15,16 +15,25 @@ html {
   overflow-x: hidden;
 }
 
-/* 🔥 Feature 06 — SCROLL SUAVE hacia #inicio/#productos, respetando
-   prefers-reduced-motion (Feature 03/041): cuando la persona prefiere
-   reducir movimiento, NO se fuerza la animación — el salto es
-   instantáneo (comportamiento nativo por defecto, sin esta regla). CSS
-   puro, sin JS ni librerías. */
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
+/* 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario)
+   ==================================================================
+   Se ELIMINA la regla global scroll-behavior:smooth en <html> que existía
+   desde Feature 06. Se comprobó con Playwright (auditoría, no se asumió)
+   que esta regla no solo animaba la navegación por anclas: al ser una
+   propiedad de <html>, el navegador también la aplicaba a CUALQUIER
+   scroll disparado por script sin "behavior" explícito — incluido
+   window.scrollTo() de restauración de fondo (modal/carrito, ver
+   js/app.js: desbloquearScrollFondo) y el scrollIntoView nativo que
+   dispara un focus() en un elemento no garantizado 100% visible (foco de
+   devolución al cerrar modal/carrito/menú mobile) — produciendo el
+   desplazamiento vertical animado e involuntario reportado.
+   El scroll suave INTENCIONAL (navegación real hacia una sección) ahora
+   vive únicamente en js/app.js (navegarASeccion()), que decide behavior:
+   "smooth"/"auto" caso por caso (respetando prefers-reduced-motion) y
+   nunca se aplica a los focus()/scrollTo() de accesibilidad, que ahora
+   usan { preventScroll: true } / behavior:"auto" explícito según
+   corresponda. El scroll por defecto de la página vuelve a ser el nativo
+   (auto/instantáneo) en cualquier otro caso. */
 
 body {
   margin: 0;
@@ -37,35 +46,53 @@ body {
   overflow-x: hidden;
 }
 
-/* 🔥 FIX MOBILE */
-@media (max-width: 768px) {
+/* 🔥 FIX MOBILE
+   🔥 Última ronda de ajustes (punto 7 — re-medición de offsets tras el
+   nuevo breakpoint del header): este umbral vivía en 768px (max-width),
+   mientras que el breakpoint real del header (scss/_header.scss) pasó de
+   600 a 768px (min-width). Eso dejaba una ventana de 1px (exactamente en
+   768px de ancho) donde el header ya renderizaba su versión DESKTOP real
+   (81px de alto, medido) pero este padding-top todavía aplicaba el valor
+   MOBILE (40px) — un desalineamiento real, medido con Playwright, no
+   solo estético. Se alinea el umbral a 767px (idéntico al de
+   scss/_header.scss) para que ambos cambien exactamente en el mismo
+   punto, igual que ya se hizo en la ronda anterior al alinear este mismo
+   tipo de regla con el breakpoint de 600px. Los valores en sí (40px/60px)
+   NO cambian: las alturas reales del header (63px mobile / 81px desktop)
+   son las mismas que antes — agregar "Nosotros" no cambió la altura del
+   header, solo el punto en el que necesita más ancho horizontal. */
+@media (max-width: 767px) {
   body {
     padding-top: 40px; // 🔥 ajusta para mobile
   }
 }
 
 /* 🔥 Feature 06 — scroll-margin-top en los destinos reales de la
-   navegación (#inicio, #productos): sin esto, al saltar al ancla el
-   header fixed (scss/_header.scss) tapa el título/borde superior de la
-   sección. Valores medidos contra la altura real del header renderizado
-   en cada franja.
-   🔥 Ajuste posterior (menú hamburguesa mobile): el breakpoint del
-   header cambió de 768px a 600px (ver scss/_header.scss, razón medida
-   ahí) y la altura mobile real cambió ligeramente (57px -> 63px, el logo
-   ahora ocupa una sola línea completa). El breakpoint de estas reglas se
-   actualiza a juego (599px) para no quedar desalineado del header real:
-   entre 600-768px el header ya mide 81px (tier "desktop"), así que
-   seguir usando 768px aquí habría dejado ese rango con compensación
-   insuficiente (68px < 81px). */
+   navegación (#inicio, #productos, y ahora #nosotros): sin esto, al
+   saltar al ancla el header fixed (scss/_header.scss) tapa el
+   título/borde superior de la sección. Valores medidos contra la altura
+   real del header renderizado en cada franja.
+   🔥 Última ronda de ajustes (punto 7 — re-medición tras agregar
+   "Nosotros"): el breakpoint del header pasó de 600px a 768px (4 links
+   de navegación necesitan más ancho horizontal, ver scss/_header.scss —
+   medido empíricamente, no asumido). Se re-midió también la altura REAL
+   del header en ambas franjas con el 4to link ya en el DOM: se mantiene
+   IGUAL que antes (63px mobile / 81px desktop) — agregar un link más no
+   cambió la altura de una fila que ya tenía espacio vertical de sobra,
+   solo su ancho necesario. Por eso los valores en px de esta regla NO
+   cambian, solo el punto de corte (599→767, alineado 1:1 con el nuevo
+   breakpoint real del header). */
 #inicio,
-#productos {
-  scroll-margin-top: 92px; // 81px (header >=600px) + ~11px de respiro
+#productos,
+#nosotros {
+  scroll-margin-top: 92px; // 81px (header >=768px) + ~11px de respiro
 }
 
-@media (max-width: 599px) {
+@media (max-width: 767px) {
   #inicio,
-  #productos {
-    scroll-margin-top: 78px; // 63px (header <600px) + ~15px de respiro
+  #productos,
+  #nosotros {
+    scroll-margin-top: 78px; // 63px (header <768px) + ~15px de respiro
   }
 }
 

@@ -603,6 +603,26 @@ function modoCarritoEsModal() {
 let elementoOrigenCarrito = null;
 let elementosInertadosCarrito = [];
 
+/* 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario,
+   CAUSA RAÍZ CONFIRMADA por auditoría con Playwright, independiente del
+   scroll-behavior global): abrirCarrito() solo bloquea el scroll de fondo
+   (bloquearScrollFondo/aplicarInertFondoCarrito) CUANDO el carrito
+   funciona como drawer modal (mobile/tablet, modoCarritoEsModal()===true).
+   Pero cerrarCarrito() llamaba a desbloquearScrollFondo()/
+   quitarInertFondoCarrito() SIEMPRE, sin importar si de verdad se había
+   bloqueado algo. En DESKTOP (panel lateral, nunca modal) eso disparaba
+   igual un window.scrollTo(0, scrollYGuardado) con un valor de
+   scrollYGuardado obsoleto (compartido con el modal de producto en
+   js/app.js, nunca actualizado por el carrito en modo panel) — moviendo
+   la página a una posición incorrecta cada vez que se cerraba el carrito
+   en desktop. Se comprobó exactamente este comportamiento con un
+   monkey-patch de window.scrollTo antes de aplicar la corrección.
+   Esta bandera es la fuente de verdad de "¿el carrito bloqueó el fondo
+   de verdad esta vez?" — se activa solo cuando bloquearScrollFondo()
+   realmente se ejecuta, y es lo que cerrarCarrito() consulta antes de
+   desbloquear, en vez de asumirlo siempre. */
+let carritoBloqueadoComoModal = false;
+
 const cartPanelEl = document.getElementById("cart-panel");
 const cartOverlayEl = document.getElementById("cart-overlay");
 const cartCloseBtn = document.getElementById("close-cart");
@@ -754,12 +774,15 @@ function abrirCarrito(origen) {
     if (modoCarritoEsModal()) {
         bloquearScrollFondo();
         aplicarInertFondoCarrito();
+        carritoBloqueadoComoModal = true; // ver comentario junto a la declaración
         if (cartOverlayEl) cartOverlayEl.classList.add("active");
 
         // Foco inicial en CERRAR (punto 18) — solo tiene sentido forzarlo
         // en modo modal; en desktop el carrito no "roba" el foco de la
-        // tienda.
-        if (cartCloseBtn) cartCloseBtn.focus();
+        // tienda. preventScroll:true (última ronda, punto 1): el botón ya
+        // queda visible dentro del propio drawer recién mostrado, este
+        // focus() nunca debe mover la página de fondo.
+        if (cartCloseBtn) cartCloseBtn.focus({ preventScroll: true });
     }
 }
 
@@ -773,13 +796,27 @@ function cerrarCarrito() {
     cartPanelEl.classList.remove("active");
 
     if (cartOverlayEl) cartOverlayEl.classList.remove("active");
-    desbloquearScrollFondo();
-    quitarInertFondoCarrito();
+
+    // 🔥 Última ronda de ajustes (punto 1 — corrección de la causa raíz):
+    // desbloquearScrollFondo()/quitarInertFondoCarrito() SOLO deben
+    // ejecutarse si este cierre en verdad venía de un bloqueo real (modo
+    // drawer modal). Antes se llamaban siempre, incluso en desktop (panel
+    // lateral, nunca bloqueado), generando un scrollTo(0, valorObsoleto)
+    // que desplazaba la página sin motivo (ver comentario en la
+    // declaración de carritoBloqueadoComoModal).
+    if (carritoBloqueadoComoModal) {
+        desbloquearScrollFondo();
+        quitarInertFondoCarrito();
+        carritoBloqueadoComoModal = false;
+    }
 
     // Devuelve el foco al elemento que abrió el carrito (punto 18), con
     // resguardo seguro si ya no existe en el DOM — nunca genera errores.
+    // preventScroll:true (última ronda, punto 1): este focus() es
+    // puramente de accesibilidad, nunca debe desplazar la página por su
+    // cuenta (el botón del carrito en el header ya está siempre visible).
     if (elementoOrigenCarrito && document.body.contains(elementoOrigenCarrito) && typeof elementoOrigenCarrito.focus === "function") {
-        elementoOrigenCarrito.focus();
+        elementoOrigenCarrito.focus({ preventScroll: true });
     }
     elementoOrigenCarrito = null;
 }
@@ -799,12 +836,14 @@ MEDIA_QUERY_CARRITO_MODAL.addEventListener("change", () => {
         // Pasó a modo modal (venía de desktop): aplicar lo que faltaba.
         bloquearScrollFondo();
         aplicarInertFondoCarrito();
+        carritoBloqueadoComoModal = true; // mantiene la bandera sincronizada con la realidad
         if (cartOverlayEl) cartOverlayEl.classList.add("active");
     } else {
         // Pasó a modo panel lateral (venía de modal): liberar todo lo
         // que el modo modal había bloqueado, sin dejar residuos.
         desbloquearScrollFondo();
         quitarInertFondoCarrito();
+        carritoBloqueadoComoModal = false;
         if (cartOverlayEl) cartOverlayEl.classList.remove("active");
     }
 });

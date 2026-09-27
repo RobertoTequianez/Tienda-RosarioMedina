@@ -215,23 +215,251 @@ document.addEventListener("DOMContentLoaded", () => {
     activarNavegacion();
 });
 
-/* 🔥 Feature 06 — NAVEGACIÓN DEL HEADER
-   "Inicio"/"Productos" y el logo son anchors nativos (href="#inicio"/
-   "#productos"): el desplazamiento en sí no necesita JS (scroll-behavior:
-   smooth + scroll-margin-top, ver scss/_base.scss y scss/_products.scss).
-   Lo único que necesita JS es "Ofertas": no existe todavía un modelo real
-   de ofertas (sin flag/precio anterior/descuento en data/productos.js,
-   confirmado en la auditoría), así que además de llevar al catálogo real
-   (mismo href="#productos"), informa brevemente con el sistema de toast
-   ya existente — nunca se inventa una promoción ni se crea una sección
-   vacía solo para justificar el enlace. */
+/* 🔥 Última ronda de ajustes (punto 1) — NAVEGACIÓN INTENCIONAL CENTRALIZADA
+   ==================================================================
+   Antes, el desplazamiento hacia #inicio/#productos dependía de una regla
+   CSS GLOBAL (html{scroll-behavior:smooth}, ver scss/_base.scss). Esa
+   regla quedó eliminada: se comprobó con Playwright (no se asumió) que
+   afectaba TODO scroll de la página, no solo la navegación — incluía
+   window.scrollTo() de restauración de fondo (modal/carrito) y cualquier
+   focus() de devolución de foco cuyo elemento no quedara 100% visible,
+   produciendo el desplazamiento vertical involuntario reportado (ver
+   auditoría completa en el reporte de esta ronda).
+
+   navegarASeccion() es ahora el ÚNICO punto que dispara un scroll suave
+   intencional, y solo lo usan los disparadores reales de navegación:
+   Inicio/Productos/Ofertas(→Productos)/Nosotros, el logo y "Comprar
+   ahora". Respeta prefers-reduced-motion (reutiliza
+   prefiereMovimientoReducido(), ya usada por el carrusel del modal — no
+   se duplica la detección) y respeta el scroll-margin-top ya definido
+   por sección (scss/_base.scss) porque scrollIntoView() lo honra de forma
+   nativa, sin recalcular manualmente la altura del header. */
+function navegarASeccion(idDestino) {
+    const destino = document.getElementById(idDestino);
+    if (!destino) return;
+
+    destino.scrollIntoView({
+        behavior: prefiereMovimientoReducido() ? "auto" : "smooth",
+        block: "start",
+    });
+
+    // Mantiene la URL sincronizada con la sección visitada sin usar el
+    // salto instantáneo nativo del navegador (que competiría con el
+    // scrollIntoView de arriba) — pushState no mueve el scroll por sí
+    // mismo.
+    if (window.history && typeof window.history.pushState === "function") {
+        window.history.pushState(null, "", "#" + idDestino);
+    } else {
+        window.location.hash = idDestino;
+    }
+}
+
+/* 🔥 Última ronda de ajustes (punto 2/5) — ESTADO ACTIVO DE NAVEGACIÓN
+   ==================================================================
+   Único punto que decide qué link luce "activo" (clase .is-active +
+   aria-current="location"). Se aplica SOLO a los links de secciones
+   reales (Inicio/Productos/Nosotros, ver SECCIONES_NAVEGABLES) — "Ofertas"
+   nunca puede quedar marcado como activo porque no representa una sección
+   propia (punto 5: al hacer clic en Ofertas, el estado activo final debe
+   quedar en Productos). */
+const SECCIONES_NAVEGABLES = ["inicio", "productos", "nosotros"];
+const IDS_LINK_POR_SECCION = {
+    inicio: "nav-inicio",
+    productos: "nav-productos",
+    nosotros: "nav-nosotros",
+};
+
+function establecerSeccionActiva(idSeccion) {
+    if (!SECCIONES_NAVEGABLES.includes(idSeccion)) return;
+
+    SECCIONES_NAVEGABLES.forEach((seccion) => {
+        const link = document.getElementById(IDS_LINK_POR_SECCION[seccion]);
+        if (!link) return;
+
+        if (seccion === idSeccion) {
+            link.classList.add("is-active");
+            link.setAttribute("aria-current", "location");
+        } else {
+            link.classList.remove("is-active");
+            link.removeAttribute("aria-current");
+        }
+    });
+}
+
+/* 🔥 Última ronda de ajustes (punto 6) — SINCRONIZACIÓN CON SCROLL MANUAL
+   ==================================================================
+   Se evaluó IntersectionObserver y SÍ se implementa: con solo 3 secciones
+   rastreables (Inicio/Productos/Nosotros, nunca Ofertas) la lógica es
+   simple y robusta, no hace falta nada más elaborado (scroll-spy con
+   pesos, throttling manual, etc.).
+   rootMargin recorta el área de detección para que la sección deba ocupar
+   una franja central razonable del viewport (no basta con asomar 1px bajo
+   el header) antes de considerarse "la actual".
+   Guard anti-flicker: mientras el usuario acaba de hacer clic en un link
+   (navegarASeccion en curso), el observer queda en pausa un instante — el
+   scroll programático atraviesa visualmente otras secciones de camino a
+   destino y sin este guard el estado activo parpadearía con la sección de
+   paso antes de asentarse en la de destino. */
+let navegacionProgramaticaEnCurso = false;
+let navegacionProgramaticaTimeoutId = null;
+
+function marcarNavegacionProgramatica() {
+    navegacionProgramaticaEnCurso = true;
+    if (navegacionProgramaticaTimeoutId) clearTimeout(navegacionProgramaticaTimeoutId);
+    // Ventana de seguridad: cubre incluso un scroll "smooth" largo entre
+    // Inicio y Nosotros (las dos secciones más alejadas entre sí). Si el
+    // navegador soporta el evento "scrollend" se libera antes (ver abajo).
+    navegacionProgramaticaTimeoutId = setTimeout(() => {
+        navegacionProgramaticaEnCurso = false;
+    }, 1000);
+}
+
+if ("onscrollend" in window) {
+    window.addEventListener("scrollend", () => {
+        navegacionProgramaticaEnCurso = false;
+        if (navegacionProgramaticaTimeoutId) clearTimeout(navegacionProgramaticaTimeoutId);
+    });
+}
+
+/* ¿El usuario ya llegó (o casi) al final real de la página? Se usa tanto
+   para el caso borde de "Nosotros" (última sección, ver
+   activarDeteccionFinDePagina) como para que el propio
+   IntersectionObserver de abajo SE ABSTENGA de opinar en ese preciso
+   momento — sin este resguardo, "Productos" (que todavía puede seguir
+   cruzando su franja de detección porque es una sección alta) le ganaba
+   la carrera al caso especial de fin de página y el estado activo volvía
+   a "Productos" justo cuando el usuario ya estaba viendo "Nosotros". */
+function estaCercaDelFinalDePagina() {
+    return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+}
+
+function activarObservadorSecciones() {
+    if (typeof IntersectionObserver === "undefined") return; // resguardo, navegadores muy antiguos
+
+    const secciones = SECCIONES_NAVEGABLES
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+
+    if (secciones.length === 0) return;
+
+    const observer = new IntersectionObserver(
+        (entradas) => {
+            if (navegacionProgramaticaEnCurso) return;
+            if (estaCercaDelFinalDePagina()) return; // ver activarDeteccionFinDePagina
+
+            // De las secciones actualmente intersectando la franja central,
+            // la de mayor proporción visible es la "actual". Si ninguna
+            // intersecta (p. ej. el usuario está sobre el hero antes de
+            // #inicio o en el footer tras #nosotros) no se cambia nada —
+            // se conserva el último estado activo real conocido.
+            const visibles = entradas.filter((e) => e.isIntersecting);
+            if (visibles.length === 0) return;
+
+            visibles.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+            const idSeccion = visibles[0].target.id;
+            establecerSeccionActiva(idSeccion);
+        },
+        {
+            // Franja de detección angosta, pegada justo debajo del header
+            // fixed (~110px cubre el header más alto, 81px, con margen):
+            // la sección que esté cruzando esa franja es "la actual". Con
+            // un margen inferior de -75% en vez de partir el viewport por
+            // la mitad, esta franja queda cerca del techo visible — así
+            // funciona igual de bien con secciones altas (Productos, con
+            // grilla larga) que con secciones cortas (Nosotros, texto
+            // breve): ambas alcanzan esa franja apenas quedan "debajo del
+            // header", sin depender de cuánto ocupen del viewport total.
+            rootMargin: "-110px 0px -75% 0px",
+            threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+        }
+    );
+
+    secciones.forEach((seccion) => observer.observe(seccion));
+
+    activarDeteccionFinDePagina();
+}
+
+/* 🔥 Última ronda de ajustes (punto 6) — CASO BORDE: "Nosotros" es la
+   ÚLTIMA sección antes del footer (breve, sin nada debajo). En viewports
+   donde el documento no tiene suficiente alto para desplazarse hasta que
+   esa sección quede pegada bajo el header (el navegador no puede
+   scrollear más allá del final real de la página), la franja de
+   detección "pegada al header" del IntersectionObserver de arriba nunca
+   llega a activarse para Nosotros por scroll manual — comprobado con
+   Playwright, no asumido. Solución simple y robusta (en vez de complicar
+   el rootMargin persiguiendo un caso que depende del alto exacto del
+   documento/viewport): un listener de scroll liviano y pasivo que
+   verifica si ya se llegó al final real de la página; si es así, se
+   fuerza el estado activo a "nosotros" directamente, sin depender de
+   intersección. No compite con el observer de arriba (nunca se ejecutan
+   para el mismo punto de scroll: este caso solo aplica exactamente al
+   final de la página, donde el observer ya no tiene más sección debajo
+   que activar). */
+function activarDeteccionFinDePagina() {
+    if (!document.getElementById("nosotros")) return;
+
+    let programado = false;
+    window.addEventListener(
+        "scroll",
+        () => {
+            if (navegacionProgramaticaEnCurso || programado) return;
+            programado = true;
+            window.requestAnimationFrame(() => {
+                programado = false;
+                if (estaCercaDelFinalDePagina()) establecerSeccionActiva("nosotros");
+            });
+        },
+        { passive: true }
+    );
+}
+
+/* 🔥 Feature 06 (base) + última ronda de ajustes — NAVEGACIÓN DEL HEADER
+   Todo enlace de navegación intencional (Inicio/Productos/Nosotros/logo/
+   "Comprar ahora") pasa por navegarASeccion() + establecerSeccionActiva():
+   nunca se duplica la lógica de scroll por link. "Ofertas" es el único
+   caso especial: no existe todavía un modelo real de ofertas (sin flag/
+   precio anterior/descuento en data/productos.js, confirmado en la
+   auditoría), así que además de llevar al catálogo real (mismo destino
+   que "Productos"), informa brevemente con el sistema de toast ya
+   existente — nunca se inventa una promoción ni se crea una sección
+   vacía solo para justificar el enlace, y el estado activo final queda
+   en Productos (punto 5), nunca en Ofertas. */
 function activarNavegacion() {
+    const enlaceInicio = document.getElementById("nav-inicio");
+    const enlaceProductos = document.getElementById("nav-productos");
     const enlaceOfertas = document.getElementById("nav-ofertas");
+    const enlaceNosotros = document.getElementById("nav-nosotros");
+    const logo = document.querySelector(".header__logo");
+    const btnComprarAhora = document.getElementById("btn-comprar-ahora");
+
+    if (enlaceInicio) {
+        enlaceInicio.addEventListener("click", (e) => {
+            e.preventDefault();
+            marcarNavegacionProgramatica();
+            navegarASeccion("inicio");
+            establecerSeccionActiva("inicio");
+        });
+    }
+
+    if (enlaceProductos) {
+        enlaceProductos.addEventListener("click", (e) => {
+            e.preventDefault();
+            marcarNavegacionProgramatica();
+            navegarASeccion("productos");
+            establecerSeccionActiva("productos");
+        });
+    }
+
     if (enlaceOfertas) {
-        enlaceOfertas.addEventListener("click", () => {
-            // No se hace preventDefault(): el navegador igual sigue el
-            // href="#productos" de forma nativa: nunca es un enlace roto,
-            // incluso si este script fallara en cargar.
+        enlaceOfertas.addEventListener("click", (e) => {
+            // 🔥 Ofertas navega al mismo destino real que Productos, usando
+            // el mismo sistema centralizado (nunca una segunda
+            // implementación de scroll) — preventDefault() porque ahora el
+            // desplazamiento lo controla enteramente navegarASeccion().
+            e.preventDefault();
+            marcarNavegacionProgramatica();
+            navegarASeccion("productos");
+            establecerSeccionActiva("productos"); // nunca "Ofertas" (no es sección real)
             mostrarToast(null, {
                 tipo: "info",
                 mensaje: "Por el momento no hay ofertas disponibles.",
@@ -239,6 +467,33 @@ function activarNavegacion() {
         });
     }
 
+    if (enlaceNosotros) {
+        enlaceNosotros.addEventListener("click", (e) => {
+            e.preventDefault();
+            marcarNavegacionProgramatica();
+            navegarASeccion("nosotros");
+            establecerSeccionActiva("nosotros");
+        });
+    }
+
+    if (logo) {
+        logo.addEventListener("click", (e) => {
+            e.preventDefault();
+            marcarNavegacionProgramatica();
+            navegarASeccion("inicio");
+            establecerSeccionActiva("inicio");
+        });
+    }
+
+    if (btnComprarAhora) {
+        btnComprarAhora.addEventListener("click", () => {
+            marcarNavegacionProgramatica();
+            navegarASeccion("productos");
+            establecerSeccionActiva("productos");
+        });
+    }
+
+    activarObservadorSecciones();
     activarMenuMobile();
 }
 
@@ -330,8 +585,12 @@ function cerrarMenuMobile(opciones = {}) {
 
     document.removeEventListener("click", manejarClickFueraDelMenu);
 
+    // 🔥 Última ronda de ajustes (punto 1): preventScroll:true — el
+    // hamburguesa siempre vive en el header fixed (100% visible), pero se
+    // deja explícito por consistencia con el resto de los focus() de
+    // devolución de foco de esta ronda.
     if (opciones.devolverFoco) {
-        menuToggleBtn.focus();
+        menuToggleBtn.focus({ preventScroll: true });
     }
 }
 
@@ -366,7 +625,7 @@ function crearCard(producto, esPrimeraFila) {
             <h3 class="product-card__title"><button type="button" class="product-card__title-btn">${producto.nombre}</button></h3>
             <p class="product-card__price">$${producto.precio}</p>
 
-            <button class="product-card__btn"${agotado ? " disabled" : ""}>${agotado ? "AGOTADO" : "AGREGAR"}</button>
+            <button type="button" class="product-card__btn"${agotado ? " disabled" : ""}>${agotado ? "AGOTADO" : "AGREGAR"}</button>
         </div>
     `;
 
@@ -463,8 +722,16 @@ function abrirModal(producto, origen) {
     // 🔥 Feature 03 (accesibilidad §3): foco inicial en CERRAR, no en
     // AGREGAR — evita que un usuario de teclado dispare una compra por
     // accidente solo por seguir presionando Enter tras abrir el modal.
+    // 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario):
+    // { preventScroll: true } — el único objetivo de este focus() es
+    // accesibilidad (que el lector de pantalla/teclado arranque en el
+    // botón Cerrar), nunca mover la página. Sin esto, si el botón no
+    // quedara 100% visible el navegador podría desplazar la vista por su
+    // cuenta (scrollIntoView nativo del propio focus()) — el modal ya
+    // centra su contenido visualmente, así que ese desplazamiento nunca
+    // era intencional.
     if (closeModal) {
-        closeModal.focus();
+        closeModal.focus({ preventScroll: true });
     }
 }
 
@@ -722,8 +989,19 @@ function cerrarModal() {
     // mientras el modal estaba abierto), simplemente no se mueve el foco
     // — resguardo seguro que nunca genera errores ni intenta adivinar un
     // destino arbitrario.
+    // 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario,
+    // CONFIRMADO por auditoría con Playwright): este focus() es el
+    // causante directo del "salto" visible al cerrar el modal. Con
+    // scroll-behavior:smooth global (ya eliminado, ver scss/_base.scss) el
+    // navegador animaba el scrollIntoView nativo que dispara focus() en un
+    // elemento no garantizado 100% visible, incluso DESPUÉS de que
+    // desbloquearScrollFondo() ya había restaurado la posición correcta
+    // (se medió que este focus() podía sobreescribir esa restauración con
+    // un segundo scroll animado). { preventScroll: true } mantiene
+    // devolución de foco/accesibilidad intactas, solo suprime el
+    // desplazamiento visual no deseado.
     if (elementoOrigenModal && document.body.contains(elementoOrigenModal) && typeof elementoOrigenModal.focus === "function") {
-        elementoOrigenModal.focus();
+        elementoOrigenModal.focus({ preventScroll: true });
     }
     elementoOrigenModal = null;
 }
@@ -898,9 +1176,19 @@ function desbloquearScrollFondo() {
     if (header) header.style.paddingRight = "";
 
     // Restaura exactamente la posición donde estaba el usuario antes de
-    // abrir el modal. Sin "behavior: smooth": debe ser instantáneo, no
-    // debe verse como un nuevo scroll animado.
-    window.scrollTo(0, scrollYGuardado);
+    // abrir el modal. Debe ser SIEMPRE instantáneo, nunca un scroll
+    // animado (no es una navegación, es una restauración invisible).
+    // 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario,
+    // CONFIRMADO por auditoría con Playwright): aunque la intención ya
+    // era "instantáneo" (ver comentario original), window.scrollTo(x, y)
+    // SIN un "behavior" explícito hereda el valor por defecto ("auto"),
+    // que a su vez quedaba controlado por la regla global
+    // scroll-behavior:smooth de scss/_base.scss — por eso esta
+    // restauración se veía animada. Esa regla global ya se eliminó (ver
+    // scss/_base.scss), pero además se deja aquí "behavior: auto"
+    // explícito como refuerzo: nunca debe depender de qué CSS global
+    // exista en el futuro.
+    window.scrollTo({ top: scrollYGuardado, left: 0, behavior: "auto" });
 }
 
 /* CARRUSEL DEL MODAL (DOM real con scroll-snap, no reemplazo de src) */

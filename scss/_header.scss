@@ -42,38 +42,98 @@
       padding: 0;
     }
 
-    /* 🔥 Feature 06: Inicio/Productos/Ofertas ahora son <a> reales
-       (antes <li> de texto plano, sin funcionalidad ni foco de
-       teclado). Señal de estado discreta: border-bottom sutil en
-       hover/focus — nada de colores llamativos, sin scroll-spy (ver
-       comentario en index.html).
-       🔥 Ajuste posterior (navegación "editorial/minimalista"): más
-       padding vertical/horizontal para mejorar el área de click/touch
-       sin separar visualmente los items (el padding reemplaza parte del
-       gap entre <li>, ver más abajo); mismo tratamiento de subrayado en
-       :focus-visible que en :hover (antes solo tenía el anillo genérico
-       de foco); peso de fuente ligeramente mayor en hover/focus como
-       único acento adicional — sin cápsulas, sin fondo, sin scale. */
+    /* 🔥 Feature 06: Inicio/Productos/Ofertas/Nosotros ahora son <a>
+       reales (antes <li> de texto plano, sin funcionalidad ni foco de
+       teclado).
+       🔥 Última ronda de ajustes (punto 2) — el hover anterior (borde
+       inferior sutil rgba(0,0,0,.4)) se sentía "como texto plano", casi
+       imperceptible. Se reemplaza por un subrayado real vía ::after
+       (2px, revela con scaleX 0→1 desde la izquierda — técnica moderna,
+       sin desplazar layout porque es un pseudo-elemento absoluto, no un
+       border que cambia el flujo) + un cambio de color de texto hacia un
+       tono de acento compatible con la paleta rosa de la tienda.
+       Color de acento elegido: $color-accent (#ff2d75, ya existía
+       declarado en scss/_variables.scss sin uso — no se inventa un color
+       nuevo) para el SUBRAYADO (decorativo, no necesita ratio de
+       contraste); para el TEXTO se usa darken($color-accent, 25%) — un
+       rosa/burdeos más intenso, elegido porque a esa oscuridad el
+       contraste contra el fondo del header (#F9E2E7) ya supera 4.5:1
+       (AA para texto normal de 14px), cosa que el rosa base (#ff2d75) no
+       lograba (~2.9:1) — verificado numéricamente, no a ojo. Ninguno de
+       los dos colores es una copia literal de ninguna imagen de
+       referencia: es una variación tonal del rosa que ya definía la
+       identidad de la tienda (fondo del header, paleta general).
+       Nada de sombra fuerte/escala de texto/cápsulas/glow/animaciones
+       largas — solo color + un subrayado de 2px con una transición
+       breve. */
     .nav__link {
+      position: relative;
       display: inline-block;
       color: $color-black;
       text-decoration: none;
       font-size: 14px;
       font-weight: 400;
       padding: 8px 6px;
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.2s ease, font-weight 0.2s ease;
 
-      @media (hover: hover) {
-        &:hover {
-          border-bottom-color: rgba(0, 0, 0, 0.4);
-          font-weight: 500;
+      &::after {
+        content: "";
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        bottom: 3px;
+        height: 2px;
+        background: $color-accent;
+        transform: scaleX(0);
+        transform-origin: left;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        transition: color 0.2s ease, font-weight 0.2s ease;
+
+        &::after {
+          transition: transform 0.25s ease;
         }
       }
 
+      @media (hover: hover) {
+        &:hover {
+          color: darken($color-accent, 25%);
+          font-weight: 500;
+
+          &::after {
+            transform: scaleX(1);
+          }
+        }
+      }
+
+      /* 🔥 :focus-visible debe verse igual o más claro que el hover (no
+         solo color, ver requerimiento): además del color/subrayado de
+         arriba, sigue recibiendo el anillo de foco genérico ya definido
+         globalmente en scss/_base.scss (outline 2px sólido) — la
+         combinación (color + subrayado + anillo) es estrictamente más
+         visible que el hover solo. */
       &:focus-visible {
-        border-bottom-color: rgba(0, 0, 0, 0.4);
+        color: darken($color-accent, 25%);
         font-weight: 500;
+
+        &::after {
+          transform: scaleX(1);
+        }
+      }
+
+      /* 🔥 Última ronda de ajustes (punto 2) — ESTADO ACTIVO REAL.
+         Aplicado por JS (js/app.js: establecerSeccionActiva) solo a
+         Inicio/Productos/Nosotros, nunca a Ofertas (no representa una
+         sección propia). Subrayado permanente + color de acento, sin
+         depender de hover/focus — sincronizado 1:1 con
+         aria-current="location" en el mismo link. */
+      &.is-active {
+        color: darken($color-accent, 25%);
+        font-weight: 500;
+
+        &::after {
+          transform: scaleX(1);
+        }
       }
     }
   }
@@ -211,28 +271,29 @@
   }
 }
 
-/* 📱 Feature 06 (ajuste) — BREAKPOINT DEL HEADER
+/* 📱 Última ronda de ajustes (punto 7) — BREAKPOINT DEL HEADER, RE-MEDIDO
    ==================================================================
-   Medido empíricamente (no se asumió 768px "por convención"): con el
-   patrón de 3 items de navegación a tamaño desktop (14px, gap 12px) +
-   logo + carrito, el conjunto ya se queda sin aire real por debajo de
-   ~600px — a 480px sólo quedan ~6-14px libres a cada lado del bloque de
-   navegación (visualmente ya apretado), mientras que a 600px hay
-   ~66-74px libres (respira con comodidad). Por eso el corte es 600px:
-   por debajo, header compacto + hamburguesa; desde 600px en adelante,
-   navegación horizontal visible (igual que antes, sin usar hamburguesa
-   en tablet/desktop). Documentado también en el reporte de esta ronda.
+   El valor anterior (600px) se había medido y documentado explícitamente
+   como válido SOLO para 3 items de navegación (Inicio/Productos/Ofertas,
+   ver historial de esta sección) y pendiente de re-medición al agregar
+   "Nosotros". Ahora que existe el cuarto link, se re-midió empíricamente
+   con el mismo método de siempre (forzar el patrón desktop completo vía
+   Playwright — logo + 4 links a tamaño real + carrito — y medir el
+   espacio libre real a cada ancho candidato: 599/600/640/680/700/720/
+   768/820/900/1024), en vez de asumir que 600px seguía sirviendo.
 
-   🔥 PENDIENTE (Feature 07): este valor (600px) fue medido y validado
-   con los 3 items actuales de navegación (Inicio/Productos/Ofertas). En
-   Feature 07 se agregará un cuarto enlace ("Nosotros", ver index.html)
-   cuando exista su sección real — al agregarlo, el patrón desktop pasa
-   a Inicio | Productos | Ofertas | Nosotros | Carrito, que necesita más
-   ancho horizontal que el medido acá. El breakpoint DEBE volver a
-   medirse en ese momento (mismo método: forzar estilos desktop y medir
-   el espacio libre real en cada ancho candidato) — no asumir que 600px
-   sigue siendo válido con 4 items en vez de 3. No se cambia ahora. */
-@media (max-width: 599px) {
+   Resultado: con 4 links, el bloque completo (logo+nav+carrito) ya no
+   entra con aire a 600px (ahí el espacio libre a cada lado es 0px —
+   logo/nav/carrito quedan pegados). El espacio libre crece de forma
+   lineal según el ancho disponible (~18px a 640px, ~48px a 700px, ~58px
+   a 720px) y recién alcanza un margen cómodo (~82px por lado, similar o
+   mejor que los ~66-74px que se consideraron "cómodos" en la medición
+   anterior con 3 items) en 768px. Por eso el nuevo corte es 768px (no
+   768px "por convención de tablet": coincide con ese valor porque fue el
+   primer candidato de la lista que devolvió aire suficiente, no al
+   revés): por debajo, header compacto + hamburguesa; desde 768px en
+   adelante, navegación horizontal visible con los 4 links. */
+@media (max-width: 767px) {
   .header__container {
     padding: 10px 15px;
   }
@@ -295,6 +356,11 @@
     width: 100%;
     padding: 14px 20px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    // 🔥 border-left transparente reservado desde el inicio (mismo ancho
+    // que el indicador de .is-active, más abajo): así, cuando un link se
+    // vuelve activo, el indicador no "empuja" el texto ni cambia el
+    // padding — solo cambia de color.
+    border-left: 3px solid transparent;
     font-size: 15px;
 
     @media (hover: hover) {
@@ -309,6 +375,32 @@
       border-bottom-color: rgba(0, 0, 0, 0.06);
       background: rgba(0, 0, 0, 0.04);
       font-weight: 400;
+    }
+
+    /* 🔥 Última ronda de ajustes (punto 3) — FEEDBACK TÁCTIL INMEDIATO.
+       :active es la señal más directa e inmediata que existe para touch
+       (se aplica en cuanto el dedo toca, sin esperar ningún JS ni
+       temporizador) — fondo rosa translúcido discreto + color de acento,
+       sin scale/flashes/colores fuertes/negro sólido. Se apoya en el
+       mismo acento que ya usa el hover/active desktop, nunca un color
+       nuevo. */
+    &:active {
+      background: rgba(255, 45, 117, 0.12);
+      color: darken($color-accent, 25%);
+    }
+
+    /* 🔥 Última ronda de ajustes (punto 3) — ESTADO SELECCIONADO AL
+       REABRIR EL MENÚ. Mismo criterio que el desktop (color de acento +
+       aria-current, aplicado por establecerSeccionActiva() en
+       js/app.js), aquí reforzado con un fondo rosa suave permanente y un
+       pequeño indicador lateral (borde izquierdo de 3px) — "cuál es la
+       sección actual" queda visible de un vistazo apenas se abre el
+       menú, sin esperar ningún hover/tap. */
+    &.is-active {
+      background: rgba(255, 45, 117, 0.08);
+      color: darken($color-accent, 25%);
+      font-weight: 500;
+      border-left-color: $color-accent;
     }
   }
 
@@ -344,7 +436,7 @@
   }
 }
 
-@media (min-width: 600px) {
+@media (min-width: 768px) {
   // Hamburguesa nunca visible en tablet/desktop — navegación horizontal
   // de siempre se mantiene.
   .header__menu-toggle {

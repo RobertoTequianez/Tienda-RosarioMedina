@@ -70,10 +70,16 @@
              hamburguesa, más abajo). Se evaluó scroll-spy (estado activo
              según sección visible) y se descartó a propósito: la
              navegación funcional es la prioridad. -->
+        <!-- 🔥 Última ronda de ajustes: orden definitivo Inicio / Productos /
+             Ofertas / Nosotros (punto 5 del requerimiento). Cada link real
+             (Inicio/Productos/Nosotros) tiene id propio para que el JS
+             pueda distinguirlos de forma robusta aunque Productos y
+             Ofertas compartan el mismo href="#productos" — el estado
+             activo/aria-current se calcula por id, nunca por href. -->
         <nav class="header__nav" id="header-nav" aria-label="Navegación principal">
             <ul class="nav__list">
-                <li><a href="#inicio" class="nav__link">Inicio</a></li>
-                <li><a href="#productos" class="nav__link">Productos</a></li>
+                <li><a href="#inicio" class="nav__link" id="nav-inicio">Inicio</a></li>
+                <li><a href="#productos" class="nav__link" id="nav-productos">Productos</a></li>
                 <!-- 🔥 "Ofertas": no existe todavía un modelo real de
                      ofertas (sin flag de oferta/precio anterior/descuento
                      en data/productos.js) — no se inventa ninguno. El
@@ -82,10 +88,14 @@
                      el sistema de toast ya existente (ver
                      js/app.js). Nunca es un enlace roto ni una sección
                      vacía creada solo para justificar el ítem de menú.
-                     "Nosotros" NO se agrega todavía: no existe una
-                     sección real — se documenta como pendiente de
-                     Feature 07 (ver scss/_header.scss y js/app.js). -->
+                     Nunca recibe estado activo/aria-current: no es una
+                     sección real (ver js/app.js: establecerSeccionActiva). -->
                 <li><a href="#productos" class="nav__link" id="nav-ofertas">Ofertas</a></li>
+                <!-- 🔥 "Nosotros": ahora existe una sección real (más abajo,
+                     después de Productos) — usa el mismo sistema de
+                     navegación intencional centralizado (navegarASeccion)
+                     que Inicio/Productos, con su propio scroll-margin-top. -->
+                <li><a href="#nosotros" class="nav__link" id="nav-nosotros">Nosotros</a></li>
             </ul>
         </nav>
 
@@ -169,7 +179,15 @@
     <div class="hero-video__content">
         <h1>Nueva colección</h1>
         <p>Descubre lo último en tendencia</p>
-        <button class="btn-primary">Comprar ahora</button>
+        <!-- 🔥 Última ronda de ajustes: "Comprar ahora" queda mencionado
+             explícitamente entre los disparadores de navegación intencional
+             (junto a Inicio/Productos/Nosotros) que deben usar el mismo
+             sistema centralizado de scroll — antes este botón no tenía
+             ningún comportamiento cableado. Destino lógico: el catálogo
+             real (#productos, mismo destino que "Productos"). type="button"
+             explícito (no hay <form> en la página, pero se deja explícito
+             por auditoría/robustez). -->
+        <button type="button" class="btn-primary" id="btn-comprar-ahora">Comprar ahora</button>
     </div>
 
 </section>
@@ -199,6 +217,29 @@
             <!-- JS renderiza -->
         </div>
 
+    </div>
+</section>
+
+<!-- 🔥 Última ronda de ajustes: sección real "Nosotros" (punto 4). Editorial,
+     minimalista, sin cards/stats/testimonios/carrusel/iconos decorativos.
+     Un solo <h2> (jerarquía de encabezados intacta: <h1> sigue viviendo
+     únicamente en el hero). Texto breve, basado solo en el catálogo real
+     actual (bolsas/lapiceras/mochilas) — no inventa historia, años de
+     experiencia, ubicación, fabricación propia, envío nacional, garantías
+     ni marcas. Sin imagen: no existe todavía un asset de Nosotros
+     aprobado, y la spec pide explícitamente no rellenar con una imagen
+     solo para ocupar espacio — composición a una columna, con ancho de
+     lectura acotado (ver scss/_nosotros.scss) para que en desktop no se
+     estire de borde a borde. -->
+<section class="nosotros" id="nosotros">
+    <div class="nosotros__container">
+        <h2 class="nosotros__title">Nosotros</h2>
+        <p class="nosotros__lead">Conoce Tienda Rosario</p>
+        <p class="nosotros__texto">
+            En Tienda Rosario encontrarás una selección de mochilas, bolsas y
+            lapiceras pensada para distintos estilos y necesidades. Buscamos
+            ofrecer una experiencia de compra sencilla, clara y cercana.
+        </p>
     </div>
 </section>
 
@@ -343,7 +384,7 @@
         </div>
 
         <!-- 🔥 NUEVO BOTÓN -->
-        <button class="product-card__btn" id="modal-add">
+        <button type="button" class="product-card__btn" id="modal-add">
           AGREGAR
         </button>
       </div>

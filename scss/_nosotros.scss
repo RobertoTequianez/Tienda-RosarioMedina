@@ -1,0 +1,95 @@
+/* 🔥 Última ronda de ajustes (punto 4) — SECCIÓN "NOSOTROS"
+   ==================================================================
+   Partial NUEVO (_nosotros.scss, importado en main.scss junto al resto):
+   no encajaba en _products.scss (sección distinta, propósito distinto —
+   ese archivo es específicamente el catálogo/grid/filtros) ni en
+   _base.scss (reservado para resets globales) ni en _hero.scss (el hero
+   es la portada de video/imagen, "Nosotros" es contenido editorial de
+   texto). Se sigue el mismo patrón ya establecido en el proyecto: un
+   partial por sección/componente (header, hero, products, cart, modal,
+   toast) — Nosotros es una sección nueva y propia, le corresponde el
+   suyo.
+
+   Diseño: elegante, minimalista, con mucho espacio en blanco, sin
+   cards/stats/iconos decorativos/testimonios/carrusel/fondos saturados
+   — el requerimiento los prohíbe explícitamente. Sin imagen: no existe
+   todavía un asset de "Nosotros" aprobado, y se prohíbe agregar una
+   solo para "rellenar espacio" — la composición se apoya únicamente en
+   tipografía/espaciado.
+   Fondo: se deja SIN color propio (blanco/heredado, igual que el resto
+   del contenido de <main>) — no se inventa un tercer tono de fondo
+   además del rosa del header y el blanco del catálogo, para no
+   fragmentar la paleta.
+   Mobile/tablet: una sola columna centrada, ancho de lectura acotado.
+   Desktop amplio (>=900px): composición editorial a DOS columnas
+   (título/kicker a la izquierda, texto a la derecha) — mejora el
+   diseño sin necesitar ninguna imagen de relleno (permitido
+   explícitamente por el requerimiento). */
+.nosotros {
+  padding: $spacing * 3 $spacing * 2;
+
+  &__container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  &__title {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: $color-black;
+  }
+
+  &__lead {
+    margin: 0 0 20px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $color-gray;
+  }
+
+  &__texto {
+    margin: 0;
+    max-width: 60ch; // ancho de lectura cómodo, no de borde a borde
+    font-size: 16px;
+    line-height: 1.7;
+    color: $color-black;
+  }
+}
+
+/* 🔥 Composición editorial a dos columnas en desktop amplio: el título +
+   kicker quedan fijos a la izquierda (bloque corto, actúa como "ancla"
+   visual) y el texto respira a la derecha con su propio ancho de
+   lectura — sin agregar ninguna imagen, solo tipografía y una
+   proporción de columnas asimétrica (1fr / 2fr). */
+@media (min-width: 900px) {
+  .nosotros {
+    &__container {
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: $spacing * 3;
+      align-items: start;
+    }
+
+    &__title {
+      font-size: 32px;
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    &__lead {
+      grid-column: 1;
+      grid-row: 2;
+      margin-bottom: 0;
+    }
+
+    &__texto {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      max-width: 55ch;
+    }
+  }
+}

@@ -14,16 +14,25 @@ html {
   overflow-x: hidden;
 }
 
-/* 🔥 Feature 06 — SCROLL SUAVE hacia #inicio/#productos, respetando
-   prefers-reduced-motion (Feature 03/041): cuando la persona prefiere
-   reducir movimiento, NO se fuerza la animación — el salto es
-   instantáneo (comportamiento nativo por defecto, sin esta regla). CSS
-   puro, sin JS ni librerías. */
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
+/* 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario)
+   ==================================================================
+   Se ELIMINA la regla global scroll-behavior:smooth en <html> que existía
+   desde Feature 06. Se comprobó con Playwright (auditoría, no se asumió)
+   que esta regla no solo animaba la navegación por anclas: al ser una
+   propiedad de <html>, el navegador también la aplicaba a CUALQUIER
+   scroll disparado por script sin "behavior" explícito — incluido
+   window.scrollTo() de restauración de fondo (modal/carrito, ver
+   js/app.js: desbloquearScrollFondo) y el scrollIntoView nativo que
+   dispara un focus() en un elemento no garantizado 100% visible (foco de
+   devolución al cerrar modal/carrito/menú mobile) — produciendo el
+   desplazamiento vertical animado e involuntario reportado.
+   El scroll suave INTENCIONAL (navegación real hacia una sección) ahora
+   vive únicamente en js/app.js (navegarASeccion()), que decide behavior:
+   "smooth"/"auto" caso por caso (respetando prefers-reduced-motion) y
+   nunca se aplica a los focus()/scrollTo() de accesibilidad, que ahora
+   usan { preventScroll: true } / behavior:"auto" explícito según
+   corresponda. El scroll por defecto de la página vuelve a ser el nativo
+   (auto/instantáneo) en cualquier otro caso. */
 body {
   margin: 0;
   padding: 0;
@@ -33,33 +42,51 @@ body {
   overflow-x: hidden;
 }
 
-/* 🔥 FIX MOBILE */
-@media (max-width: 768px) {
+/* 🔥 FIX MOBILE
+   🔥 Última ronda de ajustes (punto 7 — re-medición de offsets tras el
+   nuevo breakpoint del header): este umbral vivía en 768px (max-width),
+   mientras que el breakpoint real del header (scss/_header.scss) pasó de
+   600 a 768px (min-width). Eso dejaba una ventana de 1px (exactamente en
+   768px de ancho) donde el header ya renderizaba su versión DESKTOP real
+   (81px de alto, medido) pero este padding-top todavía aplicaba el valor
+   MOBILE (40px) — un desalineamiento real, medido con Playwright, no
+   solo estético. Se alinea el umbral a 767px (idéntico al de
+   scss/_header.scss) para que ambos cambien exactamente en el mismo
+   punto, igual que ya se hizo en la ronda anterior al alinear este mismo
+   tipo de regla con el breakpoint de 600px. Los valores en sí (40px/60px)
+   NO cambian: las alturas reales del header (63px mobile / 81px desktop)
+   son las mismas que antes — agregar "Nosotros" no cambió la altura del
+   header, solo el punto en el que necesita más ancho horizontal. */
+@media (max-width: 767px) {
   body {
     padding-top: 40px;
   }
 }
 /* 🔥 Feature 06 — scroll-margin-top en los destinos reales de la
-   navegación (#inicio, #productos): sin esto, al saltar al ancla el
-   header fixed (scss/_header.scss) tapa el título/borde superior de la
-   sección. Valores medidos contra la altura real del header renderizado
-   en cada franja.
-   🔥 Ajuste posterior (menú hamburguesa mobile): el breakpoint del
-   header cambió de 768px a 600px (ver scss/_header.scss, razón medida
-   ahí) y la altura mobile real cambió ligeramente (57px -> 63px, el logo
-   ahora ocupa una sola línea completa). El breakpoint de estas reglas se
-   actualiza a juego (599px) para no quedar desalineado del header real:
-   entre 600-768px el header ya mide 81px (tier "desktop"), así que
-   seguir usando 768px aquí habría dejado ese rango con compensación
-   insuficiente (68px < 81px). */
+   navegación (#inicio, #productos, y ahora #nosotros): sin esto, al
+   saltar al ancla el header fixed (scss/_header.scss) tapa el
+   título/borde superior de la sección. Valores medidos contra la altura
+   real del header renderizado en cada franja.
+   🔥 Última ronda de ajustes (punto 7 — re-medición tras agregar
+   "Nosotros"): el breakpoint del header pasó de 600px a 768px (4 links
+   de navegación necesitan más ancho horizontal, ver scss/_header.scss —
+   medido empíricamente, no asumido). Se re-midió también la altura REAL
+   del header en ambas franjas con el 4to link ya en el DOM: se mantiene
+   IGUAL que antes (63px mobile / 81px desktop) — agregar un link más no
+   cambió la altura de una fila que ya tenía espacio vertical de sobra,
+   solo su ancho necesario. Por eso los valores en px de esta regla NO
+   cambian, solo el punto de corte (599→767, alineado 1:1 con el nuevo
+   breakpoint real del header). */
 #inicio,
-#productos {
+#productos,
+#nosotros {
   scroll-margin-top: 92px;
 }
 
-@media (max-width: 599px) {
+@media (max-width: 767px) {
   #inicio,
-  #productos {
+  #productos,
+  #nosotros {
     scroll-margin-top: 78px;
   }
 }
@@ -130,38 +157,97 @@ textarea:focus-visible,
   padding: 0;
 }
 .header__nav {
-  /* 🔥 Feature 06: Inicio/Productos/Ofertas ahora son <a> reales
-     (antes <li> de texto plano, sin funcionalidad ni foco de
-     teclado). Señal de estado discreta: border-bottom sutil en
-     hover/focus — nada de colores llamativos, sin scroll-spy (ver
-     comentario en index.html).
-     🔥 Ajuste posterior (navegación "editorial/minimalista"): más
-     padding vertical/horizontal para mejorar el área de click/touch
-     sin separar visualmente los items (el padding reemplaza parte del
-     gap entre <li>, ver más abajo); mismo tratamiento de subrayado en
-     :focus-visible que en :hover (antes solo tenía el anillo genérico
-     de foco); peso de fuente ligeramente mayor en hover/focus como
-     único acento adicional — sin cápsulas, sin fondo, sin scale. */
+  /* 🔥 Feature 06: Inicio/Productos/Ofertas/Nosotros ahora son <a>
+     reales (antes <li> de texto plano, sin funcionalidad ni foco de
+     teclado).
+     🔥 Última ronda de ajustes (punto 2) — el hover anterior (borde
+     inferior sutil rgba(0,0,0,.4)) se sentía "como texto plano", casi
+     imperceptible. Se reemplaza por un subrayado real vía ::after
+     (2px, revela con scaleX 0→1 desde la izquierda — técnica moderna,
+     sin desplazar layout porque es un pseudo-elemento absoluto, no un
+     border que cambia el flujo) + un cambio de color de texto hacia un
+     tono de acento compatible con la paleta rosa de la tienda.
+     Color de acento elegido: $color-accent (#ff2d75, ya existía
+     declarado en scss/_variables.scss sin uso — no se inventa un color
+     nuevo) para el SUBRAYADO (decorativo, no necesita ratio de
+     contraste); para el TEXTO se usa darken($color-accent, 25%) — un
+     rosa/burdeos más intenso, elegido porque a esa oscuridad el
+     contraste contra el fondo del header (#F9E2E7) ya supera 4.5:1
+     (AA para texto normal de 14px), cosa que el rosa base (#ff2d75) no
+     lograba (~2.9:1) — verificado numéricamente, no a ojo. Ninguno de
+     los dos colores es una copia literal de ninguna imagen de
+     referencia: es una variación tonal del rosa que ya definía la
+     identidad de la tienda (fondo del header, paleta general).
+     Nada de sombra fuerte/escala de texto/cápsulas/glow/animaciones
+     largas — solo color + un subrayado de 2px con una transición
+     breve. */
 }
 .header__nav .nav__link {
+  position: relative;
   display: inline-block;
   color: #111;
   text-decoration: none;
   font-size: 14px;
   font-weight: 400;
   padding: 8px 6px;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.2s ease, font-weight 0.2s ease;
+}
+.header__nav .nav__link::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 2px;
+  background: #ff2d75;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .header__nav .nav__link {
+    transition: color 0.2s ease, font-weight 0.2s ease;
+  }
+  .header__nav .nav__link::after {
+    transition: transform 0.25s ease;
+  }
 }
 @media (hover: hover) {
   .header__nav .nav__link:hover {
-    border-bottom-color: rgba(0, 0, 0, 0.4);
+    color: rgb(67.6470588235%, 0%, 23.1932773109%);
     font-weight: 500;
   }
+  .header__nav .nav__link:hover::after {
+    transform: scaleX(1);
+  }
+}
+.header__nav .nav__link {
+  /* 🔥 :focus-visible debe verse igual o más claro que el hover (no
+     solo color, ver requerimiento): además del color/subrayado de
+     arriba, sigue recibiendo el anillo de foco genérico ya definido
+     globalmente en scss/_base.scss (outline 2px sólido) — la
+     combinación (color + subrayado + anillo) es estrictamente más
+     visible que el hover solo. */
 }
 .header__nav .nav__link:focus-visible {
-  border-bottom-color: rgba(0, 0, 0, 0.4);
+  color: rgb(67.6470588235%, 0%, 23.1932773109%);
   font-weight: 500;
+}
+.header__nav .nav__link:focus-visible::after {
+  transform: scaleX(1);
+}
+.header__nav .nav__link {
+  /* 🔥 Última ronda de ajustes (punto 2) — ESTADO ACTIVO REAL.
+     Aplicado por JS (js/app.js: establecerSeccionActiva) solo a
+     Inicio/Productos/Nosotros, nunca a Ofertas (no representa una
+     sección propia). Subrayado permanente + color de acento, sin
+     depender de hover/focus — sincronizado 1:1 con
+     aria-current="location" en el mismo link. */
+}
+.header__nav .nav__link.is-active {
+  color: rgb(67.6470588235%, 0%, 23.1932773109%);
+  font-weight: 500;
+}
+.header__nav .nav__link.is-active::after {
+  transform: scaleX(1);
 }
 .header__actions {
   display: flex;
@@ -270,28 +356,29 @@ textarea:focus-visible,
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* 📱 Feature 06 (ajuste) — BREAKPOINT DEL HEADER
+/* 📱 Última ronda de ajustes (punto 7) — BREAKPOINT DEL HEADER, RE-MEDIDO
    ==================================================================
-   Medido empíricamente (no se asumió 768px "por convención"): con el
-   patrón de 3 items de navegación a tamaño desktop (14px, gap 12px) +
-   logo + carrito, el conjunto ya se queda sin aire real por debajo de
-   ~600px — a 480px sólo quedan ~6-14px libres a cada lado del bloque de
-   navegación (visualmente ya apretado), mientras que a 600px hay
-   ~66-74px libres (respira con comodidad). Por eso el corte es 600px:
-   por debajo, header compacto + hamburguesa; desde 600px en adelante,
-   navegación horizontal visible (igual que antes, sin usar hamburguesa
-   en tablet/desktop). Documentado también en el reporte de esta ronda.
+   El valor anterior (600px) se había medido y documentado explícitamente
+   como válido SOLO para 3 items de navegación (Inicio/Productos/Ofertas,
+   ver historial de esta sección) y pendiente de re-medición al agregar
+   "Nosotros". Ahora que existe el cuarto link, se re-midió empíricamente
+   con el mismo método de siempre (forzar el patrón desktop completo vía
+   Playwright — logo + 4 links a tamaño real + carrito — y medir el
+   espacio libre real a cada ancho candidato: 599/600/640/680/700/720/
+   768/820/900/1024), en vez de asumir que 600px seguía sirviendo.
 
-   🔥 PENDIENTE (Feature 07): este valor (600px) fue medido y validado
-   con los 3 items actuales de navegación (Inicio/Productos/Ofertas). En
-   Feature 07 se agregará un cuarto enlace ("Nosotros", ver index.html)
-   cuando exista su sección real — al agregarlo, el patrón desktop pasa
-   a Inicio | Productos | Ofertas | Nosotros | Carrito, que necesita más
-   ancho horizontal que el medido acá. El breakpoint DEBE volver a
-   medirse en ese momento (mismo método: forzar estilos desktop y medir
-   el espacio libre real en cada ancho candidato) — no asumir que 600px
-   sigue siendo válido con 4 items en vez de 3. No se cambia ahora. */
-@media (max-width: 599px) {
+   Resultado: con 4 links, el bloque completo (logo+nav+carrito) ya no
+   entra con aire a 600px (ahí el espacio libre a cada lado es 0px —
+   logo/nav/carrito quedan pegados). El espacio libre crece de forma
+   lineal según el ancho disponible (~18px a 640px, ~48px a 700px, ~58px
+   a 720px) y recién alcanza un margen cómodo (~82px por lado, similar o
+   mejor que los ~66-74px que se consideraron "cómodos" en la medición
+   anterior con 3 items) en 768px. Por eso el nuevo corte es 768px (no
+   768px "por convención de tablet": coincide con ese valor porque fue el
+   primer candidato de la lista que devolvió aire suficiente, no al
+   revés): por debajo, header compacto + hamburguesa; desde 768px en
+   adelante, navegación horizontal visible con los 4 links. */
+@media (max-width: 767px) {
   .header__container {
     padding: 10px 15px;
   }
@@ -342,21 +429,46 @@ textarea:focus-visible,
     width: 100%;
     padding: 14px 20px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-left: 3px solid transparent;
     font-size: 15px;
+    /* 🔥 Última ronda de ajustes (punto 3) — FEEDBACK TÁCTIL INMEDIATO.
+       :active es la señal más directa e inmediata que existe para touch
+       (se aplica en cuanto el dedo toca, sin esperar ningún JS ni
+       temporizador) — fondo rosa translúcido discreto + color de acento,
+       sin scale/flashes/colores fuertes/negro sólido. Se apoya en el
+       mismo acento que ya usa el hover/active desktop, nunca un color
+       nuevo. */
+    /* 🔥 Última ronda de ajustes (punto 3) — ESTADO SELECCIONADO AL
+       REABRIR EL MENÚ. Mismo criterio que el desktop (color de acento +
+       aria-current, aplicado por establecerSeccionActiva() en
+       js/app.js), aquí reforzado con un fondo rosa suave permanente y un
+       pequeño indicador lateral (borde izquierdo de 3px) — "cuál es la
+       sección actual" queda visible de un vistazo apenas se abre el
+       menú, sin esperar ningún hover/tap. */
   }
 }
-@media (max-width: 599px) and (hover: hover) {
+@media (max-width: 767px) and (hover: hover) {
   .header__nav .nav__link:hover {
     border-bottom-color: rgba(0, 0, 0, 0.06);
     background: rgba(0, 0, 0, 0.04);
     font-weight: 400;
   }
 }
-@media (max-width: 599px) {
+@media (max-width: 767px) {
   .header__nav .nav__link:focus-visible {
     border-bottom-color: rgba(0, 0, 0, 0.06);
     background: rgba(0, 0, 0, 0.04);
     font-weight: 400;
+  }
+  .header__nav .nav__link:active {
+    background: rgba(255, 45, 117, 0.12);
+    color: rgb(67.6470588235%, 0%, 23.1932773109%);
+  }
+  .header__nav .nav__link.is-active {
+    background: rgba(255, 45, 117, 0.08);
+    color: rgb(67.6470588235%, 0%, 23.1932773109%);
+    font-weight: 500;
+    border-left-color: #ff2d75;
   }
   .nav__list li:last-child .nav__link {
     border-bottom: none;
@@ -381,7 +493,7 @@ textarea:focus-visible,
     display: flex;
   }
 }
-@media (min-width: 600px) {
+@media (min-width: 768px) {
   .header__menu-toggle {
     display: none;
   }
@@ -588,6 +700,92 @@ textarea:focus-visible,
     padding: 7px 12px;
     font-size: 11px;
     border-radius: 20px;
+  }
+}
+/* 🔥 Última ronda de ajustes (punto 4) — SECCIÓN "NOSOTROS"
+   ==================================================================
+   Partial NUEVO (_nosotros.scss, importado en main.scss junto al resto):
+   no encajaba en _products.scss (sección distinta, propósito distinto —
+   ese archivo es específicamente el catálogo/grid/filtros) ni en
+   _base.scss (reservado para resets globales) ni en _hero.scss (el hero
+   es la portada de video/imagen, "Nosotros" es contenido editorial de
+   texto). Se sigue el mismo patrón ya establecido en el proyecto: un
+   partial por sección/componente (header, hero, products, cart, modal,
+   toast) — Nosotros es una sección nueva y propia, le corresponde el
+   suyo.
+
+   Diseño: elegante, minimalista, con mucho espacio en blanco, sin
+   cards/stats/iconos decorativos/testimonios/carrusel/fondos saturados
+   — el requerimiento los prohíbe explícitamente. Sin imagen: no existe
+   todavía un asset de "Nosotros" aprobado, y se prohíbe agregar una
+   solo para "rellenar espacio" — la composición se apoya únicamente en
+   tipografía/espaciado.
+   Fondo: se deja SIN color propio (blanco/heredado, igual que el resto
+   del contenido de <main>) — no se inventa un tercer tono de fondo
+   además del rosa del header y el blanco del catálogo, para no
+   fragmentar la paleta.
+   Mobile/tablet: una sola columna centrada, ancho de lectura acotado.
+   Desktop amplio (>=900px): composición editorial a DOS columnas
+   (título/kicker a la izquierda, texto a la derecha) — mejora el
+   diseño sin necesitar ninguna imagen de relleno (permitido
+   explícitamente por el requerimiento). */
+.nosotros {
+  padding: 60px 40px;
+}
+.nosotros__container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.nosotros__title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #111;
+}
+.nosotros__lead {
+  margin: 0 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #888;
+}
+.nosotros__texto {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #111;
+}
+
+/* 🔥 Composición editorial a dos columnas en desktop amplio: el título +
+   kicker quedan fijos a la izquierda (bloque corto, actúa como "ancla"
+   visual) y el texto respira a la derecha con su propio ancho de
+   lectura — sin agregar ninguna imagen, solo tipografía y una
+   proporción de columnas asimétrica (1fr / 2fr). */
+@media (min-width: 900px) {
+  .nosotros__container {
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 60px;
+    align-items: start;
+  }
+  .nosotros__title {
+    font-size: 32px;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .nosotros__lead {
+    grid-column: 1;
+    grid-row: 2;
+    margin-bottom: 0;
+  }
+  .nosotros__texto {
+    grid-column: 2;
+    grid-row: 1/span 2;
+    max-width: 55ch;
   }
 }
 .btn-primary {
