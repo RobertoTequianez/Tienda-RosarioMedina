@@ -405,6 +405,7 @@ textarea:focus-visible,
   top: 0;
   width: 400px;
   height: 100vh;
+  height: 100dvh;
   background: white;
   box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
   transition: right 0.3s ease;
@@ -468,6 +469,7 @@ textarea:focus-visible,
 }
 .cart-panel__items {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 16px 18px;

@@ -41,7 +41,19 @@
   // detrás del panel lateral. Los anchos de tablet/mobile (media queries
   // más abajo, <=1024px y <=480px) NO se modifican.
   width: 400px;
-  height: 100vh;
+
+  // 🔥 ROBUSTEZ DE ALTURA EN MÓVIL (hallazgo en Android físico): 100vh en
+  // Chrome/Android se calcula sobre el viewport "grande" (con la barra de
+  // navegación/URL colapsada), no sobre el alto realmente visible en cada
+  // momento. Cuando esa barra está presente, 100vh queda más alto que el
+  // área visible real, y el resumen (Subtotal/Envío/Total) — al final de
+  // la columna flex — puede quedar empujado fuera de esa área visible.
+  // `100dvh` (dynamic viewport height) sí seguidamente cambia con la barra
+  // del navegador/sistema; se declara DESPUÉS de `100vh` como progressive
+  // enhancement — navegadores sin soporte para `dvh` simplemente ignoran
+  // esa línea y se quedan con el `100vh` de fallback, sin romper nada.
+  height: 100vh; // fallback (Safari/Android antiguos, navegadores sin soporte dvh)
+  height: 100dvh; // viewport dinámico real: se ajusta cuando la barra de navegación aparece/desaparece
   background: white;
   box-shadow: -5px 0 15px rgba(0,0,0,0.1);
   transition: right 0.3s ease;
@@ -109,6 +121,16 @@
       columna flex. */
   &__items {
     flex: 1;
+    // 🔥 Sin esto, el mínimo por defecto de un flex-item en columna es
+    // "auto" (= altura de su contenido), lo que puede impedir que esta
+    // lista se encoja por debajo de ese contenido cuando el espacio
+    // disponible del drawer se reduce (barra dinámica de Android, muchos
+    // productos, etc.) — el contenedor entero crecería en vez de scrollear
+    // internamente, empujando el resumen fuera del área visible. Con
+    // min-height:0 la lista SÍ puede encogerse y absorber esa reducción,
+    // dejando el scroll (overflow-y:auto) donde corresponde: dentro de la
+    // lista, nunca en la página ni duplicado.
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 16px 18px;
