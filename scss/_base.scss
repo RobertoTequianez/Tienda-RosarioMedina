@@ -13,6 +13,19 @@ html {
 
   /*  evita scroll lateral fantasma */
   overflow-x: hidden;
+
+  /* 🔥 Ajuste UX (corrección post-candidato §13 Causa A): reserva SIEMPRE
+     el espacio de la barra de scroll vertical (en navegadores/SO con
+     scrollbar clásica, que sí ocupa layout — en overlay scrollbars esto
+     no tiene efecto visible pero tampoco rompe nada). Sin esto, cuando un
+     filtro reduce la altura de la página lo suficiente para que la
+     scrollbar desaparezca, el ancho disponible del documento crece en el
+     ancho de esa barra (~15-17px) y TODO el contenido (título, buscador,
+     sidebar, contador, inicio del grid) se corre esos px — el "cambia
+     ligeramente de alineación" reportado. scrollbar-gutter:stable reserva
+     ese espacio siempre, haya o no scroll real, sin ningún hack de
+     padding manual (spec: "no usar hacks de padding manual"). */
+  scrollbar-gutter: stable;
 }
 
 /* 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario)

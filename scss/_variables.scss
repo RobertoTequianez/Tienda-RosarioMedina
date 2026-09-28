@@ -7,3 +7,11 @@ $font-main: 'Helvetica Neue', sans-serif;
 
 $spacing: 20px;
 $radius: 10px;
+
+/* 🔥 Ronda final de pulido — tokens compartidos para el sistema visual
+   único de botones textuales (spec §8/§9/§10): un solo lugar que define
+   "qué tan ovalado" y "qué tan alto" es cualquier CTA de texto del sitio
+   (AGREGAR/AGOTADO/Ver todos/Comprar ahora/Filtros/Limpiar filtros/Ver N
+   productos) — nunca un valor repetido a mano en cada selector. */
+$radius-pill: 999px;
+$control-height: 46px; // referencia 44-48px (spec §10)

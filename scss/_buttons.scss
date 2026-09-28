@@ -1,9 +1,97 @@
-.btn-primary {
+/* 🔥 Ronda final de pulido (spec §8/§9/§10): sistema visual único para
+   CTAs TEXTUALES — nunca para carrito/hamburguesa/X/+-/dots (esos
+   conservan su propia geometría circular/cuadrada de siempre, spec §8).
+   Dos mixins, un solo punto de verdad para radio/altura/transición —
+   cada botón existente los incluye sin crear clases ni componentes
+   nuevos (AGREGAR sigue siendo .product-card__btn, Limpiar sigue siendo
+   .catalogo__limpiar, etc.): comparten geometría/comportamiento, no
+   arquitectura. */
+@mixin btn-pill-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: $control-height;
+  padding: 0 20px;
+  border-radius: $radius-pill;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: background-color 0.2s ease, color 0.2s ease,
+      border-color 0.2s ease, opacity 0.2s ease;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-accent;
+    outline-offset: 2px;
+  }
+}
+
+/* Variante PRIMARIA — fondo negro/texto blanco (§13): Comprar ahora, Ver
+   todos los productos, Ver N productos (drawer mobile). */
+@mixin btn-pill-primary {
+  @include btn-pill-base;
+  border: none;
   background: $color-black;
   color: $color-white;
-  border: none;
-  padding: 12px 20px;
-  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+/* Variante OUTLINE — fondo transparente/borde oscuro, invierte en hover
+   (§11): AGREGAR/AGOTADO, Filtros (toggle mobile), Limpiar filtros. */
+@mixin btn-pill-outline {
+  @include btn-pill-base;
+  border: 1px solid $color-black;
+  background: transparent;
+  color: $color-black;
+
+  @media (hover: hover) {
+    &:hover {
+      background: $color-black;
+      color: $color-white;
+    }
+  }
+
+  &:active {
+    background: $color-black;
+    color: $color-white;
+  }
+}
+
+.btn-primary {
+  @include btn-pill-primary;
+}
+
+/* 🔥 §13/§14: flecha discreta SOLO en "Ver todos los productos" (no en
+   "Comprar ahora" — spec la menciona únicamente para el primero). Se
+   activa por la sola presencia de este <span> (ver index.html), sin
+   necesitar una clase modificadora extra en el propio <a>. */
+.btn-primary__flecha {
+  display: inline-block;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: transform 0.18s ease; // 150-220ms (spec §14)
+  }
+}
+
+.btn-primary:hover .btn-primary__flecha {
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateX(4px);
+  }
 }
 
 /* 🔥 Feature 06: ahora es <a> (navegación hacia wa.me), no <button> —

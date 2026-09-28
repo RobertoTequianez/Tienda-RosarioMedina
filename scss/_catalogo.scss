@@ -102,23 +102,160 @@
 
 .catalogo__orden {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
 
   select {
     min-width: 190px;
   }
 }
 
-/* Botón "Filtros": oculto en desktop (el sidebar ya está siempre
-   visible ahí, ver breakpoint más abajo), visible en mobile. */
-.catalogo__filtros-toggle {
-  flex: 0 0 auto;
-  padding: 10px 16px;
-  border: 1px solid $color-black;
-  background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  letter-spacing: 0.5px;
+/* 🔥 §17: label discreto SOLO en desktop — en mobile sigue en el árbol
+   de accesibilidad (nunca display:none, eso lo saca del todo) pero
+   oculto visualmente con la misma técnica que .sr-only, para no competir
+   por espacio con buscador/Filtros/Ordenar en una fila angosta (spec:
+   "mobile puede mantener solo el control"). */
+.catalogo__orden-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 992px) {
+  .catalogo__orden-label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0 8px 0 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    font-size: 12px;
+    color: $color-gray;
+  }
+}
+
+/* 🔥 §17/§18: select nativo (NO se reemplaza por un combobox custom —
+   Android/iOS deben poder mostrar su propio selector del sistema al
+   abrirlo, spec §18). Solo se estiliza el estado CERRADO vía
+   appearance:none + un chevron propio en SVG inline (sin librerías ni
+   iconfont). */
+.catalogo__toolbar select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: $radius;
+  background-color: $color-white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px 7px;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: border-color 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      border-color: rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-accent;
+    outline-offset: 2px;
+    border-color: $color-accent;
+  }
+}
+
+/* 🔥 §11: chips discretos de filtros APLICADOS realmente activos, encima
+   del grid de resultados. Botones reales (nunca solo texto+color) para
+   quitar un filtro puntual — mismo lenguaje "ovalado" que el resto de
+   controles pill del sitio. */
+/* 🔥 Ronda final de pulido (spec §7): en desktop, esta zona reserva
+   SIEMPRE una única línea de altura (~un chip real) para que el inicio
+   vertical del grid nunca dependa de si hay 0 o N chips — antes, al
+   aparecer el primer chip, el grid bajaba ~42px de golpe. Ya NO se
+   controla con el atributo `hidden` (eso la sacaba del flujo por
+   completo, sin reservar nada) — ahora es siempre un elemento en flujo,
+   y el modificador --vacio (aplicado por JS cuando no hay filtros
+   activos) solo colapsa el espacio en MOBILE, donde el layout shift
+   nunca fue el problema reportado (medición antes/después en el
+   reporte). */
+.catalogo__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+@media (max-width: 991px) {
+  .catalogo__chips--vacio {
+    margin: 0;
+    min-height: 0;
+  }
+}
+
+@media (min-width: 992px) {
+  .catalogo__chips {
+    min-height: 32px; // ancho de un chip real (line-height + padding vertical)
+  }
+}
+
+.catalogo__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  background: $color-white;
+  font-size: 12px;
+  cursor: pointer;
+  color: $color-black;
+
+  span:last-child {
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.6;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-accent;
+    outline-offset: 2px;
+  }
+}
+
+/* Botón "Filtros": oculto en desktop (el sidebar ya está siempre
+   visible ahí, ver breakpoint más abajo), visible en mobile. 🔥 Ronda
+   final de pulido (spec §8/§9): mismo mixin outline que AGREGAR/Limpiar
+   filtros — misma familia pill. */
+.catalogo__filtros-toggle {
+  @include btn-pill-outline;
+  flex: 0 0 auto;
 
   &[aria-expanded="true"] {
     background: $color-black;
@@ -143,7 +280,22 @@
 
 /* PANEL DE FILTROS — mismo marcado para desktop (sidebar) y mobile
    (drawer). Por defecto (mobile-first): oculto fuera de pantalla,
-   se muestra al activar catalogo__filtros--open. */
+   se muestra al activar catalogo__filtros--open.
+
+   🔥 Ajuste UX (corrección post-candidato §8): estructura en flex column
+   real (header/body/footer como franjas propias, cada una flex: 0/1 0
+   auto) — reemplaza el enfoque anterior de "header sticky + margin
+   negativo", que dejaba "Categorías" parcialmente cortado bajo la
+   cabecera en pantallas donde el contenido del panel era más alto que lo
+   esperado (el margen negativo compensaba un padding fijo del propio
+   .catalogo__filtros, no la altura real variable de la cabecera —
+   cualquier cambio de tipografía/zoom del usuario podía desalinearlo de
+   nuevo). Con flex column, header/body/footer se acomodan según su
+   propia altura real, sin ningún cálculo ni margen "mágico". height:
+   100dvh (con 100vh como fallback para navegadores sin soporte) evita
+   que la barra de direcciones móvil deje al footer "Ver N productos"
+   oculto tras la navegación del sistema (spec §9), junto con
+   env(safe-area-inset-bottom) en el propio footer. */
 .catalogo__filtros {
   position: fixed;
   top: 0;
@@ -152,13 +304,20 @@
   width: min(85vw, 320px);
   background: $color-white;
   z-index: 1001;
-  padding: $spacing * 1.5 $spacing;
-  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden; // el scroll real vive en .catalogo__filtros-body
 
   transform: translateX(-100%);
 
+  // 🔥 §10: solo transform (nunca width/left/right/box-shadow) y una
+  // duración corta (180–220ms) — la propiedad más barata de animar
+  // (no dispara layout, solo compositing).
   @media (prefers-reduced-motion: no-preference) {
-    transition: transform 0.25s ease;
+    transition: transform 0.2s ease;
   }
 
   &--open {
@@ -166,24 +325,37 @@
   }
 }
 
-/* 🔥 Ajuste UX (revisión previa a commit, §2/§3): cabecera del drawer,
-   SOLO tiene sentido en mobile (en desktop la sidebar nunca se
-   abre/cierra, ver override desktop más abajo). "sticky" DENTRO del
-   propio panel scrolleable (no del documento): permanece visible como
-   ancla de cierre mientras el resto del contenido del panel hace scroll
-   (spec §5), sin necesitar reestructurar el marcado en header/body
-   separados. */
 .catalogo__filtros-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: $color-white;
-  margin: (-$spacing * 1.5) (-$spacing) $spacing * 1.25;
   padding: $spacing * 1.1 $spacing $spacing * 0.75;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.catalogo__filtros-body {
+  flex: 1 1 auto;
+  min-height: 0; // clave: permite que este hijo flex SÍ pueda scrollear
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: $spacing $spacing $spacing * 1.25;
+}
+
+.catalogo__filtros-footer {
+  flex: 0 0 auto;
+  padding: $spacing $spacing calc(#{$spacing} + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: $color-white;
+}
+
+/* 🔥 Ronda final de pulido (spec §15): misma familia PRIMARIA que
+   Comprar ahora/Ver todos los productos (mixin compartido) — full-width,
+   sin tocar su lógica draft/aplicar (js/catalogo.js sin cambios aquí). */
+.catalogo__filtros-aplicar {
+  @include btn-pill-primary;
+  width: 100%;
 }
 
 .catalogo__filtros-header-titulo {
@@ -221,15 +393,26 @@
   }
 }
 
+/* 🔥 §10: opacity (no display:none/block) — la propiedad barata de
+   animar, consistente con el criterio del propio drawer. visibility
+   evita que el overlay siga siendo clickeable/enfocable mientras está
+   invisible (equivalente a display:none para interacción, sin perder la
+   transición de opacity). */
 .catalogo__filtros-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
 
   &--visible {
-    display: block;
+    opacity: 1;
+    visibility: visible;
   }
 }
 
@@ -275,12 +458,84 @@
   }
 }
 
+/* 🔥 Ronda final de pulido (spec §17): sigue siendo un <input
+   type="checkbox"> real (semántica/teclado/lector de pantalla nativos,
+   nunca un <div> disfrazado) — se oculta visualmente (opacity:0, sigue
+   ocupando su lugar y recibiendo foco/teclado) y se dibuja la caja/check
+   en un <span aria-hidden="true"> HERMANO que sigue al input en el HTML
+   (productos.html) — el combinador `~` requiere hermanos reales, por
+   eso el span vive junto al input, no como pseudo-elemento del <label>
+   que los envuelve a ambos. Toda la label "En existencia" sigue
+   clickeable (el input está dentro de ella). */
 .catalogo__checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   cursor: pointer;
+
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    cursor: pointer;
+  }
+}
+
+.catalogo__checkbox-caja {
+  position: relative;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 4px; // "radio pequeño" (spec §17), no pill: es un checkbox, no un botón
+  background: $color-white;
+  box-sizing: border-box;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  // Check en sí — trazo simple, sin ícono externo (mismo criterio que el
+  // resto del sitio: SVG/CSS inline, nunca librerías).
+  &::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 11px;
+    border: solid $color-white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) scale(0);
+    transform-origin: center;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition: transform 0.1s ease;
+    }
+  }
+}
+
+.catalogo__checkbox input[type="checkbox"]:checked ~ .catalogo__checkbox-caja {
+  background: $color-accent;
+  border-color: $color-accent;
+
+  &::after {
+    transform: rotate(45deg) scale(1);
+  }
+}
+
+.catalogo__checkbox:hover .catalogo__checkbox-caja {
+  @media (hover: hover) {
+    border-color: $color-accent;
+  }
+}
+
+.catalogo__checkbox input[type="checkbox"]:focus-visible ~ .catalogo__checkbox-caja {
+  outline: 2px solid $color-accent;
+  outline-offset: 2px;
 }
 
 .catalogo__precio {
@@ -302,35 +557,92 @@
     color: $color-gray;
   }
 
-  input {
-    font-family: inherit;
-    font-size: 13px;
-    padding: 8px 10px;
+  // 🔥 Ronda final de pulido (spec §19/§20/§28): input group con signo
+  // "$" fijo (deja claro que es dinero sin repetirlo en cada valor) +
+  // homologado en altura/radio/borde/focus con buscador/select (spec
+  // §28). type="text" + inputmode="decimal" (ver productos.html/§20) en
+  // vez de type="number": el navegador YA NO ofrece su propio +/- ni
+  // permite "e"/"+"/"-" nativamente vía teclado numérico de spinner —
+  // la validación real vive en js/catalogo.js.
+  &-grupo {
+    display: flex;
+    align-items: center;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: $radius;
+    background: $color-white;
+    overflow: hidden;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition: border-color 0.15s ease;
+    }
+
+    &:focus-within {
+      border-color: $color-accent;
+    }
+  }
+
+  &-signo {
+    padding: 0 0 0 10px;
+    color: $color-gray;
+    font-size: 13px;
+    user-select: none;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px 8px 4px;
+    border: none;
+    background: transparent;
+
+    &:focus {
+      outline: none; // el foco visible ya lo da el contenedor (:focus-within)
+    }
+
+    // 🔥 §23/§24: aria-invalid lo pone JS directamente en el <input> que
+    // tiene el error (nunca en el grupo contenedor) — se refleja también
+    // en el borde de SU propio grupo vía :has(), con :focus-within como
+    // red de seguridad si :has() no fuera soportado (el color de texto sí
+    // aplica siempre, sin depender de :has()).
+    &[aria-invalid="true"] {
+      color: $color-accent;
+    }
+  }
+
+  &-grupo:has(input[aria-invalid="true"]) {
+    border-color: $color-accent;
   }
 }
 
+/* Mensaje de error de precio (§23/§24) — solo visible cuando existe un
+   error real (aria-describedby lo asocia al input correspondiente). */
+.catalogo__precio-error {
+  font-size: 11px;
+  color: $color-accent;
+  margin: 2px 0 0;
+
+  &:empty {
+    display: none;
+  }
+}
+
+/* Rango disponible, discreto (§19) — nunca obligatorio de leer, solo
+   referencia. */
+.catalogo__precio-rango {
+  font-size: 11px;
+  color: $color-gray;
+  margin: 2px 0 0;
+}
+
+/* 🔥 Ronda final de pulido (spec §8/§9/§16): mismo mixin outline que
+   AGREGAR/Filtros — nunca un botón primario negro (spec: "no convertirlo
+   en primario"). El estado --secundario (atenuado sin filtros) se
+   mantiene exactamente igual, montado sobre la misma geometría pill. */
 .catalogo__limpiar {
+  @include btn-pill-outline;
   width: 100%;
-  padding: 10px;
-  border: 1px solid $color-black;
-  background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  border-radius: $radius;
-
-  @media (prefers-reduced-motion: no-preference) {
-    transition: opacity 0.15s ease, border-color 0.15s ease;
-  }
-
-  @media (hover: hover) {
-    &:hover {
-      background: $color-black;
-      color: $color-white;
-    }
-  }
 
   /* 🔥 Ajuste UX (revisión previa a commit, §7): visualmente secundario
      cuando NO hay ningún filtro aplicado (nunca deshabilitado de verdad
@@ -413,15 +725,30 @@
     width: auto;
     transform: none;
     z-index: auto;
-    padding: 0;
-    overflow-y: visible;
     background: transparent;
+
+    // 🔥 Ajuste UX (corrección post-candidato §8): en desktop el sidebar
+    // vuelve a ser un bloque normal en flujo — el flex-column/height:100dvh
+    // del drawer mobile es exclusivo de ese layout, nunca del sidebar
+    // desktop (que no abre/cierra ni necesita anclar un footer).
+    display: block;
+    height: auto;
+    overflow: visible;
   }
 
-  // La cabecera "Filtros [X]" del drawer no aporta nada en desktop (la
-  // sidebar nunca se abre/cierra ahí) — se oculta, sin quitarla del DOM
-  // (mismo componente HTML reutilizado en ambos layouts, spec §27/§28).
-  .catalogo__filtros-header {
+  // La cabecera "Filtros [X]" y el footer "Ver N productos" del drawer no
+  // aportan nada en desktop (la sidebar nunca se abre/cierra ahí, y el
+  // filtrado ya es instantáneo — spec §2 "DESKTOP: mantener filtrado
+  // instantáneo") — se ocultan, sin quitarlos del DOM (mismo componente
+  // HTML reutilizado en ambos layouts, spec §27/§28).
+  .catalogo__filtros-header,
+  .catalogo__filtros-footer {
     display: none;
+  }
+
+  .catalogo__filtros-body {
+    flex: initial;
+    overflow: visible;
+    padding: 0;
   }
 }

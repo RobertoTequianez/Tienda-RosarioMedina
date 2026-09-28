@@ -1,4 +1,9 @@
 @charset "UTF-8";
+/* 🔥 Ronda final de pulido — tokens compartidos para el sistema visual
+   único de botones textuales (spec §8/§9/§10): un solo lugar que define
+   "qué tan ovalado" y "qué tan alto" es cualquier CTA de texto del sitio
+   (AGREGAR/AGOTADO/Ver todos/Comprar ahora/Filtros/Limpiar filtros/Ver N
+   productos) — nunca un valor repetido a mano en cada selector. */
 *,
 *::before,
 *::after {
@@ -12,6 +17,18 @@ html {
   padding: 0;
   /*  evita scroll lateral fantasma */
   overflow-x: hidden;
+  /* 🔥 Ajuste UX (corrección post-candidato §13 Causa A): reserva SIEMPRE
+     el espacio de la barra de scroll vertical (en navegadores/SO con
+     scrollbar clásica, que sí ocupa layout — en overlay scrollbars esto
+     no tiene efecto visible pero tampoco rompe nada). Sin esto, cuando un
+     filtro reduce la altura de la página lo suficiente para que la
+     scrollbar desaparezca, el ancho disponible del documento crece en el
+     ancho de esa barra (~15-17px) y TODO el contenido (título, buscador,
+     sidebar, contador, inicio del grid) se corre esos px — el "cambia
+     ligeramente de alineación" reportado. scrollbar-gutter:stable reserva
+     ese espacio siempre, haya o no scroll real, sin ningún hack de
+     padding manual (spec: "no usar hacks de padding manual"). */
+  scrollbar-gutter: stable;
 }
 
 /* 🔥 Última ronda de ajustes (punto 1 — bug de scroll involuntario)
@@ -139,6 +156,113 @@ textarea:focus-visible,
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* 🔥 Ronda final de pulido (spec §8/§9/§10): sistema visual único para
+   CTAs TEXTUALES — nunca para carrito/hamburguesa/X/+-/dots (esos
+   conservan su propia geometría circular/cuadrada de siempre, spec §8).
+   Dos mixins, un solo punto de verdad para radio/altura/transición —
+   cada botón existente los incluye sin crear clases ni componentes
+   nuevos (AGREGAR sigue siendo .product-card__btn, Limpiar sigue siendo
+   .catalogo__limpiar, etc.): comparten geometría/comportamiento, no
+   arquitectura. */
+/* Variante PRIMARIA — fondo negro/texto blanco (§13): Comprar ahora, Ver
+   todos los productos, Ver N productos (drawer mobile). */
+/* Variante OUTLINE — fondo transparente/borde oscuro, invierte en hover
+   (§11): AGREGAR/AGOTADO, Filtros (toggle mobile), Limpiar filtros. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+}
+.btn-primary:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+}
+.btn-primary {
+  border: none;
+  background: #111;
+  color: #fff;
+}
+@media (hover: hover) {
+  .btn-primary:hover {
+    opacity: 0.85;
+  }
+}
+.btn-primary:active {
+  opacity: 0.7;
+}
+
+/* 🔥 §13/§14: flecha discreta SOLO en "Ver todos los productos" (no en
+   "Comprar ahora" — spec la menciona únicamente para el primero). Se
+   activa por la sola presencia de este <span> (ver index.html), sin
+   necesitar una clase modificadora extra en el propio <a>. */
+.btn-primary__flecha {
+  display: inline-block;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary__flecha {
+    transition: transform 0.18s ease;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary:hover .btn-primary__flecha {
+    transform: translateX(4px);
+  }
+}
+
+/* 🔥 Feature 06: ahora es <a> (navegación hacia wa.me), no <button> —
+   mismo círculo verde flotante de siempre. Ícono cambia de emoji (💬) a
+   SVG inline simple (stroke, currentColor) por consistencia con el resto
+   de íconos del sitio (carrito, flechas del carrusel) — no es el
+   logotipo oficial de WhatsApp, es un ícono genérico de "mensaje/chat"
+   sobre el mismo verde de marca ya usado en el sitio desde antes de esta
+   feature. Oculto por defecto vía `hidden` en index.html hasta que
+   js/whatsapp.js confirme un número real configurado. */
+.whatsapp-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  background: #25D366;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.whatsapp-btn svg {
+  width: 26px;
+  height: 26px;
+}
+@media (hover: hover) {
+  .whatsapp-btn:hover {
+    background: #1ebc59;
+  }
+}
+.whatsapp-btn[hidden] {
+  display: none;
 }
 
 .header {
@@ -668,6 +792,8 @@ textarea:focus-visible,
 }
 
 .products__container {
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 40px;
   overflow: hidden;
 }
@@ -751,31 +877,58 @@ textarea:focus-visible,
   font-weight: 600;
   margin-bottom: 15px;
 }
+.product-card {
+  /* 🔥 Ronda final de pulido (spec §9/§10/§11/§12): AGREGAR/AGOTADO
+     comparten el mixin outline (mismo radio/altura/familia que
+     Filtros/Limpiar filtros) — AGOTADO es EXACTAMENTE el mismo botón con
+     el atributo `disabled` real (spec §12: "misma geometría, solo estado
+     visual", nunca un componente ni tamaño distinto). Se retira el
+     transform de hover/active (translateY/scale): la inversión de
+     color ya es la señal de interacción, sin "scale exagerado" (spec
+     §11). */
+}
 .product-card__btn {
-  width: 100%;
-  padding: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .product-card__btn {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+}
+.product-card__btn:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+}
+.product-card__btn {
   border: 1px solid #111;
   background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  letter-spacing: 1px;
-  margin-top: auto;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.25s ease;
+  color: #111;
 }
 @media (hover: hover) {
   .product-card__btn:hover {
     background: #111;
     color: #fff;
-    transform: translateY(-1px);
   }
 }
 .product-card__btn:active {
   background: #111;
   color: #fff;
-  transform: scale(0.96);
 }
 .product-card__btn {
+  width: 100%;
+  margin-top: auto;
   /* 🔥 Feedback temporal al agregar (AGREGADO ✓). Reutiliza el mismo
      negro de :hover/:active, no introduce color nuevo. */
 }
@@ -792,13 +945,11 @@ textarea:focus-visible,
   cursor: not-allowed;
   background: transparent;
   color: #111;
-  transform: none;
 }
 @media (hover: hover) {
   .product-card__btn:disabled:hover {
     background: transparent;
     color: #111;
-    transform: none;
   }
 }
 
@@ -902,22 +1053,191 @@ textarea:focus-visible,
 
 .catalogo__orden {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
 }
 .catalogo__orden select {
   min-width: 190px;
 }
 
+/* 🔥 §17: label discreto SOLO en desktop — en mobile sigue en el árbol
+   de accesibilidad (nunca display:none, eso lo saca del todo) pero
+   oculto visualmente con la misma técnica que .sr-only, para no competir
+   por espacio con buscador/Filtros/Ordenar en una fila angosta (spec:
+   "mobile puede mantener solo el control"). */
+.catalogo__orden-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 992px) {
+  .catalogo__orden-label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0 8px 0 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    font-size: 12px;
+    color: #888;
+  }
+}
+/* 🔥 §17/§18: select nativo (NO se reemplaza por un combobox custom —
+   Android/iOS deben poder mostrar su propio selector del sistema al
+   abrirlo, spec §18). Solo se estiliza el estado CERRADO vía
+   appearance:none + un chevron propio en SVG inline (sin librerías ni
+   iconfont). */
+.catalogo__toolbar select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px 7px;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__toolbar select {
+    transition: border-color 0.15s ease;
+  }
+}
+@media (hover: hover) {
+  .catalogo__toolbar select:hover {
+    border-color: rgba(0, 0, 0, 0.4);
+  }
+}
+.catalogo__toolbar select:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+  border-color: #ff2d75;
+}
+
+/* 🔥 §11: chips discretos de filtros APLICADOS realmente activos, encima
+   del grid de resultados. Botones reales (nunca solo texto+color) para
+   quitar un filtro puntual — mismo lenguaje "ovalado" que el resto de
+   controles pill del sitio. */
+/* 🔥 Ronda final de pulido (spec §7): en desktop, esta zona reserva
+   SIEMPRE una única línea de altura (~un chip real) para que el inicio
+   vertical del grid nunca dependa de si hay 0 o N chips — antes, al
+   aparecer el primer chip, el grid bajaba ~42px de golpe. Ya NO se
+   controla con el atributo `hidden` (eso la sacaba del flujo por
+   completo, sin reservar nada) — ahora es siempre un elemento en flujo,
+   y el modificador --vacio (aplicado por JS cuando no hay filtros
+   activos) solo colapsa el espacio en MOBILE, donde el layout shift
+   nunca fue el problema reportado (medición antes/después en el
+   reporte). */
+.catalogo__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+@media (max-width: 991px) {
+  .catalogo__chips--vacio {
+    margin: 0;
+    min-height: 0;
+  }
+}
+@media (min-width: 992px) {
+  .catalogo__chips {
+    min-height: 32px;
+  }
+}
+.catalogo__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  color: #111;
+}
+.catalogo__chip span:last-child {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__chip {
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+}
+@media (hover: hover) {
+  .catalogo__chip:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.3);
+  }
+}
+.catalogo__chip:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+}
+
 /* Botón "Filtros": oculto en desktop (el sidebar ya está siempre
-   visible ahí, ver breakpoint más abajo), visible en mobile. */
+   visible ahí, ver breakpoint más abajo), visible en mobile. 🔥 Ronda
+   final de pulido (spec §8/§9): mismo mixin outline que AGREGAR/Limpiar
+   filtros — misma familia pill. */
 .catalogo__filtros-toggle {
-  flex: 0 0 auto;
-  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__filtros-toggle {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+}
+.catalogo__filtros-toggle:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+}
+.catalogo__filtros-toggle {
   border: 1px solid #111;
   background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  border-radius: 10px;
+  color: #111;
+}
+@media (hover: hover) {
+  .catalogo__filtros-toggle:hover {
+    background: #111;
+    color: #fff;
+  }
+}
+.catalogo__filtros-toggle:active {
+  background: #111;
+  color: #fff;
+}
+.catalogo__filtros-toggle {
+  flex: 0 0 auto;
 }
 .catalogo__filtros-toggle[aria-expanded=true] {
   background: #111;
@@ -941,7 +1261,22 @@ textarea:focus-visible,
 
 /* PANEL DE FILTROS — mismo marcado para desktop (sidebar) y mobile
    (drawer). Por defecto (mobile-first): oculto fuera de pantalla,
-   se muestra al activar catalogo__filtros--open. */
+   se muestra al activar catalogo__filtros--open.
+
+   🔥 Ajuste UX (corrección post-candidato §8): estructura en flex column
+   real (header/body/footer como franjas propias, cada una flex: 0/1 0
+   auto) — reemplaza el enfoque anterior de "header sticky + margin
+   negativo", que dejaba "Categorías" parcialmente cortado bajo la
+   cabecera en pantallas donde el contenido del panel era más alto que lo
+   esperado (el margen negativo compensaba un padding fijo del propio
+   .catalogo__filtros, no la altura real variable de la cabecera —
+   cualquier cambio de tipografía/zoom del usuario podía desalinearlo de
+   nuevo). Con flex column, header/body/footer se acomodan según su
+   propia altura real, sin ningún cálculo ni margen "mágico". height:
+   100dvh (con 100vh como fallback para navegadores sin soporte) evita
+   que la barra de direcciones móvil deje al footer "Ver N productos"
+   oculto tras la navegación del sistema (spec §9), junto con
+   env(safe-area-inset-bottom) en el propio footer. */
 .catalogo__filtros {
   position: fixed;
   top: 0;
@@ -950,37 +1285,89 @@ textarea:focus-visible,
   width: min(85vw, 320px);
   background: #fff;
   z-index: 1001;
-  padding: 30px 20px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   transform: translateX(-100%);
 }
 @media (prefers-reduced-motion: no-preference) {
   .catalogo__filtros {
-    transition: transform 0.25s ease;
+    transition: transform 0.2s ease;
   }
 }
 .catalogo__filtros--open {
   transform: translateX(0);
 }
 
-/* 🔥 Ajuste UX (revisión previa a commit, §2/§3): cabecera del drawer,
-   SOLO tiene sentido en mobile (en desktop la sidebar nunca se
-   abre/cierra, ver override desktop más abajo). "sticky" DENTRO del
-   propio panel scrolleable (no del documento): permanece visible como
-   ancla de cierre mientras el resto del contenido del panel hace scroll
-   (spec §5), sin necesitar reestructurar el marcado en header/body
-   separados. */
 .catalogo__filtros-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #fff;
-  margin: -30px -20px 25px;
   padding: 22px 20px 15px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.catalogo__filtros-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 20px 25px;
+}
+
+.catalogo__filtros-footer {
+  flex: 0 0 auto;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+/* 🔥 Ronda final de pulido (spec §15): misma familia PRIMARIA que
+   Comprar ahora/Ver todos los productos (mixin compartido) — full-width,
+   sin tocar su lógica draft/aplicar (js/catalogo.js sin cambios aquí). */
+.catalogo__filtros-aplicar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__filtros-aplicar {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+}
+.catalogo__filtros-aplicar:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+}
+.catalogo__filtros-aplicar {
+  border: none;
+  background: #111;
+  color: #fff;
+}
+@media (hover: hover) {
+  .catalogo__filtros-aplicar:hover {
+    opacity: 0.85;
+  }
+}
+.catalogo__filtros-aplicar:active {
+  opacity: 0.7;
+}
+.catalogo__filtros-aplicar {
+  width: 100%;
 }
 
 .catalogo__filtros-header-titulo {
@@ -1016,15 +1403,27 @@ textarea:focus-visible,
   background: rgba(0, 0, 0, 0.08);
 }
 
+/* 🔥 §10: opacity (no display:none/block) — la propiedad barata de
+   animar, consistente con el criterio del propio drawer. visibility
+   evita que el overlay siga siendo clickeable/enfocable mientras está
+   invisible (equivalente a display:none para interacción, sin perder la
+   transición de opacity). */
 .catalogo__filtros-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__filtros-overlay {
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
 }
 .catalogo__filtros-overlay--visible {
-  display: block;
+  opacity: 1;
+  visibility: visible;
 }
 
 .catalogo__filtros-grupo {
@@ -1065,12 +1464,81 @@ textarea:focus-visible,
   font-weight: 600;
 }
 
+/* 🔥 Ronda final de pulido (spec §17): sigue siendo un <input
+   type="checkbox"> real (semántica/teclado/lector de pantalla nativos,
+   nunca un <div> disfrazado) — se oculta visualmente (opacity:0, sigue
+   ocupando su lugar y recibiendo foco/teclado) y se dibuja la caja/check
+   en un <span aria-hidden="true"> HERMANO que sigue al input en el HTML
+   (productos.html) — el combinador `~` requiere hermanos reales, por
+   eso el span vive junto al input, no como pseudo-elemento del <label>
+   que los envuelve a ambos. Toda la label "En existencia" sigue
+   clickeable (el input está dentro de ella). */
 .catalogo__checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   cursor: pointer;
+}
+.catalogo__checkbox input[type=checkbox] {
+  position: absolute;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.catalogo__checkbox-caja {
+  position: relative;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__checkbox-caja {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+}
+.catalogo__checkbox-caja::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 11px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__checkbox-caja::after {
+    transition: transform 0.1s ease;
+  }
+}
+
+.catalogo__checkbox input[type=checkbox]:checked ~ .catalogo__checkbox-caja {
+  background: #ff2d75;
+  border-color: #ff2d75;
+}
+.catalogo__checkbox input[type=checkbox]:checked ~ .catalogo__checkbox-caja::after {
+  transform: rotate(45deg) scale(1);
+}
+
+@media (hover: hover) {
+  .catalogo__checkbox:hover .catalogo__checkbox-caja {
+    border-color: #ff2d75;
+  }
+}
+
+.catalogo__checkbox input[type=checkbox]:focus-visible ~ .catalogo__checkbox-caja {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
 }
 
 .catalogo__precio {
@@ -1091,28 +1559,98 @@ textarea:focus-visible,
   font-size: 12px;
   color: #888;
 }
-.catalogo__precio-inputs input {
-  font-family: inherit;
-  font-size: 13px;
-  padding: 8px 10px;
+.catalogo__precio-inputs-grupo {
+  display: flex;
+  align-items: center;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .catalogo__precio-inputs-grupo {
+    transition: border-color 0.15s ease;
+  }
+}
+.catalogo__precio-inputs-grupo:focus-within {
+  border-color: #ff2d75;
+}
+.catalogo__precio-inputs-signo {
+  padding: 0 0 0 10px;
+  color: #888;
+  font-size: 13px;
+  user-select: none;
+}
+.catalogo__precio-inputs input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px 8px 4px;
+  border: none;
+  background: transparent;
+}
+.catalogo__precio-inputs input:focus {
+  outline: none;
+}
+.catalogo__precio-inputs input[aria-invalid=true] {
+  color: #ff2d75;
+}
+.catalogo__precio-inputs-grupo:has(input[aria-invalid=true]) {
+  border-color: #ff2d75;
 }
 
+/* Mensaje de error de precio (§23/§24) — solo visible cuando existe un
+   error real (aria-describedby lo asocia al input correspondiente). */
+.catalogo__precio-error {
+  font-size: 11px;
+  color: #ff2d75;
+  margin: 2px 0 0;
+}
+.catalogo__precio-error:empty {
+  display: none;
+}
+
+/* Rango disponible, discreto (§19) — nunca obligatorio de leer, solo
+   referencia. */
+.catalogo__precio-rango {
+  font-size: 11px;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+/* 🔥 Ronda final de pulido (spec §8/§9/§16): mismo mixin outline que
+   AGREGAR/Filtros — nunca un botón primario negro (spec: "no convertirlo
+   en primario"). El estado --secundario (atenuado sin filtros) se
+   mantiene exactamente igual, montado sobre la misma geometría pill. */
 .catalogo__limpiar {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #111;
-  background: transparent;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: inherit;
   font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.5px;
-  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 @media (prefers-reduced-motion: no-preference) {
   .catalogo__limpiar {
-    transition: opacity 0.15s ease, border-color 0.15s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
   }
+}
+.catalogo__limpiar:focus-visible {
+  outline: 2px solid #ff2d75;
+  outline-offset: 2px;
+}
+.catalogo__limpiar {
+  border: 1px solid #111;
+  background: transparent;
+  color: #111;
 }
 @media (hover: hover) {
   .catalogo__limpiar:hover {
@@ -1120,7 +1658,12 @@ textarea:focus-visible,
     color: #fff;
   }
 }
+.catalogo__limpiar:active {
+  background: #111;
+  color: #fff;
+}
 .catalogo__limpiar {
+  width: 100%;
   /* 🔥 Ajuste UX (revisión previa a commit, §7): visualmente secundario
      cuando NO hay ningún filtro aplicado (nunca deshabilitado de verdad
      — sigue siendo clickeable, spec: "puede permanecer disponible").
@@ -1178,12 +1721,19 @@ textarea:focus-visible,
     width: auto;
     transform: none;
     z-index: auto;
-    padding: 0;
-    overflow-y: visible;
     background: transparent;
+    display: block;
+    height: auto;
+    overflow: visible;
   }
-  .catalogo__filtros-header {
+  .catalogo__filtros-header,
+  .catalogo__filtros-footer {
     display: none;
+  }
+  .catalogo__filtros-body {
+    flex: initial;
+    overflow: visible;
+    padding: 0;
   }
 }
 /* 🔥 Última ronda de ajustes (punto 4) — SECCIÓN "NOSOTROS"
@@ -1272,52 +1822,6 @@ textarea:focus-visible,
     max-width: 55ch;
   }
 }
-.btn-primary {
-  background: #111;
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  cursor: pointer;
-}
-
-/* 🔥 Feature 06: ahora es <a> (navegación hacia wa.me), no <button> —
-   mismo círculo verde flotante de siempre. Ícono cambia de emoji (💬) a
-   SVG inline simple (stroke, currentColor) por consistencia con el resto
-   de íconos del sitio (carrito, flechas del carrusel) — no es el
-   logotipo oficial de WhatsApp, es un ícono genérico de "mensaje/chat"
-   sobre el mismo verde de marca ya usado en el sitio desde antes de esta
-   feature. Oculto por defecto vía `hidden` en index.html hasta que
-   js/whatsapp.js confirme un número real configurado. */
-.whatsapp-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  padding: 0;
-  background: #25D366;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.whatsapp-btn svg {
-  width: 26px;
-  height: 26px;
-}
-@media (hover: hover) {
-  .whatsapp-btn:hover {
-    background: #1ebc59;
-  }
-}
-.whatsapp-btn[hidden] {
-  display: none;
-}
-
 /* 🔥 Feature 05 — CARRITO: UX, RESPONSIVE Y ACCESIBILIDAD
    ==================================================================
    Se conserva la estructura compacta existente (fila [-] N [+] [eliminar],

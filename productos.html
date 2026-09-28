@@ -127,7 +127,13 @@
         <div class="catalogo__toolbar">
             <div class="catalogo__busqueda">
                 <label for="catalogo-buscar" class="sr-only">Buscar productos</label>
-                <input type="search" id="catalogo-buscar" placeholder="Buscar productos" autocomplete="off">
+                <!-- 🔥 Ronda final de pulido (spec §25/§26): maxlength=60
+                     (ningún producto real necesita un término de búsqueda
+                     más largo; evita cadenas infinitas) — el resto del
+                     saneo (caracteres de control, < >, etc.) vive en
+                     js/catalogo.js, ya que maxlength por sí solo no cubre
+                     paste ni composición IME. -->
+                <input type="search" id="catalogo-buscar" placeholder="Buscar productos" autocomplete="off" maxlength="60">
             </div>
 
             <button
@@ -141,9 +147,9 @@
             </button>
 
             <div class="catalogo__orden">
-                <label for="catalogo-orden" class="sr-only">Ordenar por</label>
+                <label for="catalogo-orden" class="catalogo__orden-label">Ordenar por</label>
                 <select id="catalogo-orden">
-                    <option value="predeterminado">Relevancia / Predeterminado</option>
+                    <option value="predeterminado">Relevancia</option>
                     <option value="precio-asc">Precio: menor a mayor</option>
                     <option value="precio-desc">Precio: mayor a menor</option>
                     <option value="nombre-az">Nombre A-Z</option>
@@ -156,12 +162,18 @@
             <!-- 🔥 §27/§28: MISMO panel de filtros para desktop (sidebar
                  siempre visible, ver CSS min-width) y mobile (panel
                  desplegable, toggle "Filtros" de arriba) — una sola fuente
-                 de verdad, nunca dos UIs de filtros a sincronizar. -->
+                 de verdad, nunca dos UIs de filtros a sincronizar.
+
+                 🔥 Ajuste UX (corrección post-candidato §8): estructura en
+                 tres franjas flex reales (header/body/footer) — nunca un
+                 "sticky + margin negativo" como recurso — para que
+                 "Categorías" nunca quede cortado bajo la cabecera y el CTA
+                 "Ver N productos" quede siempre anclado abajo, visible
+                 mientras el cuerpo hace su propio scroll interno. -->
             <aside class="catalogo__filtros" id="catalogo-filtros">
 
-                <!-- 🔥 Ajuste UX (revisión previa a commit): cabecera propia
-                     del drawer, SOLO visible en mobile (ver
-                     scss/_catalogo.scss — en desktop, sidebar siempre
+                <!-- CABECERA (flex: 0 0 auto) — SOLO visible en mobile (ver
+                     scss/_catalogo.scss: en desktop, sidebar siempre
                      visible, esta cabecera no aporta nada y se oculta):
                      título + botón cerrar real, señal visual obvia para
                      salir del panel además de Escape/overlay. -->
@@ -175,46 +187,118 @@
                     >&times;</button>
                 </div>
 
-                <div class="catalogo__filtros-grupo">
-                    <h2 class="catalogo__filtros-titulo">Categorías</h2>
-                    <!-- 🔥 §17/§18: NUNCA hardcodeado — js/catalogo.js
-                         genera estos botones dinámicamente a partir de las
-                         categorías REALES encontradas en data/productos.js
-                         (obtenerCategorias()), con "Todos" como opción de
-                         sistema (no como categoría de producto). -->
-                    <div id="catalogo-categorias" class="catalogo__categorias" role="group" aria-label="Filtrar por categoría"></div>
+                <!-- CUERPO (flex: 1 1 auto, min-height: 0, overflow-y:
+                     auto) — el único que scrollea internamente si el
+                     contenido supera la altura disponible. -->
+                <div class="catalogo__filtros-body">
+
+                    <div class="catalogo__filtros-grupo">
+                        <h2 class="catalogo__filtros-titulo">Categorías</h2>
+                        <!-- 🔥 §17/§18: NUNCA hardcodeado — js/catalogo.js
+                             genera estos botones dinámicamente a partir de
+                             las categorías REALES encontradas en
+                             data/productos.js (obtenerCategorias()), con
+                             "Todos" como opción de sistema (no como
+                             categoría de producto). -->
+                        <div id="catalogo-categorias" class="catalogo__categorias" role="group" aria-label="Filtrar por categoría"></div>
+                    </div>
+
+                    <div class="catalogo__filtros-grupo">
+                        <h2 class="catalogo__filtros-titulo">Disponibilidad</h2>
+                        <!-- 🔥 Ronda final de pulido (spec §17): sigue
+                             siendo <input type="checkbox"> real (semántica
+                             nativa intacta) — el <span aria-hidden> es
+                             SOLO la caja dibujada, hermano del input para
+                             que el CSS pueda usar `~` (ver
+                             scss/_catalogo.scss). Toda la <label> sigue
+                             siendo el área clickeable. -->
+                        <label class="catalogo__checkbox">
+                            <input type="checkbox" id="catalogo-en-existencia">
+                            <span class="catalogo__checkbox-caja" aria-hidden="true"></span>
+                            En existencia
+                        </label>
+                    </div>
+
+                    <div class="catalogo__filtros-grupo">
+                        <!-- 🔥 §22: fieldset/legend real (no solo un <h2>)
+                             para agrupar accesiblemente los dos campos
+                             numéricos relacionados (precio mínimo/máximo).
+
+                             🔥 Ronda final de pulido (spec §18-§24/§28):
+                             - "(MXN)" explícito en cada label (§19).
+                             - Grupo con signo "$" fijo, homologado en
+                               altura/radio/borde/focus con buscador/select
+                               (scss/_catalogo.scss
+                               .catalogo__precio-inputs-grupo).
+                             - type="text" + inputmode="decimal" (§20): NO
+                               type="number" (permite e/+/- nativos según
+                               navegador) — la validación real vive en
+                               js/catalogo.js.
+                             - SIN placeholder de valor ("$0"/"$9999"):
+                               vacío representa "sin límite" (§19), el "$"
+                               ya vive en el grupo, no en el placeholder.
+                             - maxlength/aria-invalid/aria-describedby
+                               los completa JS (dependen del precio máximo
+                               REAL, calculado en tiempo de ejecución —
+                               nunca hardcodeados aquí, spec §18/§22).
+                             - Rango disponible + mensaje de error: nodos
+                               vacíos que JS completa (obtenerCategorias()
+                               ya sigue el mismo patrón "nunca hardcodear
+                               en el HTML"). -->
+                        <fieldset class="catalogo__precio">
+                            <legend class="catalogo__filtros-titulo">Precio</legend>
+                            <div class="catalogo__precio-inputs">
+                                <label for="catalogo-precio-min">
+                                    Precio mínimo (MXN)
+                                    <span class="catalogo__precio-inputs-grupo">
+                                        <span class="catalogo__precio-inputs-signo" aria-hidden="true">$</span>
+                                        <input
+                                            type="text"
+                                            id="catalogo-precio-min"
+                                            inputmode="decimal"
+                                            autocomplete="off"
+                                            aria-describedby="catalogo-precio-error"
+                                        >
+                                    </span>
+                                </label>
+                                <label for="catalogo-precio-max">
+                                    Precio máximo (MXN)
+                                    <span class="catalogo__precio-inputs-grupo">
+                                        <span class="catalogo__precio-inputs-signo" aria-hidden="true">$</span>
+                                        <input
+                                            type="text"
+                                            id="catalogo-precio-max"
+                                            inputmode="decimal"
+                                            autocomplete="off"
+                                            aria-describedby="catalogo-precio-error"
+                                        >
+                                    </span>
+                                </label>
+                                <p id="catalogo-precio-rango" class="catalogo__precio-rango"></p>
+                                <p id="catalogo-precio-error" class="catalogo__precio-error" role="alert"></p>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <button type="button" id="catalogo-limpiar-filtros" class="catalogo__limpiar">
+                        Limpiar filtros
+                    </button>
+
                 </div>
 
-                <div class="catalogo__filtros-grupo">
-                    <h2 class="catalogo__filtros-titulo">Disponibilidad</h2>
-                    <label class="catalogo__checkbox">
-                        <input type="checkbox" id="catalogo-en-existencia">
-                        En existencia
-                    </label>
+                <!-- FOOTER (flex: 0 0 auto) — SOLO tiene efecto real en
+                     mobile (drawer con draft/preview, ver js/catalogo.js);
+                     en desktop se oculta (el filtrado ya es instantáneo,
+                     nada que "confirmar"). Respeta
+                     env(safe-area-inset-bottom) para no quedar pegado a la
+                     barra de navegación del dispositivo (spec §9). Texto
+                     real (nunca solo un ícono) — lo actualiza JS con la
+                     cantidad de productos que resultarían del draft. -->
+                <div class="catalogo__filtros-footer">
+                    <button type="button" id="catalogo-filtros-aplicar" class="catalogo__filtros-aplicar">
+                        Ver 9 productos
+                    </button>
                 </div>
-
-                <div class="catalogo__filtros-grupo">
-                    <!-- 🔥 §22: fieldset/legend real (no solo un <h2>) para
-                         agrupar accesiblemente los dos campos numéricos
-                         relacionados (precio mínimo/máximo). -->
-                    <fieldset class="catalogo__precio">
-                        <legend class="catalogo__filtros-titulo">Precio</legend>
-                        <div class="catalogo__precio-inputs">
-                            <label for="catalogo-precio-min">
-                                Precio mínimo
-                                <input type="number" id="catalogo-precio-min" min="0" inputmode="numeric" placeholder="$0">
-                            </label>
-                            <label for="catalogo-precio-max">
-                                Precio máximo
-                                <input type="number" id="catalogo-precio-max" min="0" inputmode="numeric" placeholder="$9999">
-                            </label>
-                        </div>
-                    </fieldset>
-                </div>
-
-                <button type="button" id="catalogo-limpiar-filtros" class="catalogo__limpiar">
-                    Limpiar filtros
-                </button>
 
             </aside>
 
@@ -227,6 +311,15 @@
             <div class="catalogo__resultados">
 
                 <p id="catalogo-contador" class="catalogo__contador" role="status" aria-live="polite"></p>
+
+                <!-- 🔥 Ajuste UX (corrección post-candidato §11): chips
+                     discretos de filtros APLICADOS realmente activos —
+                     JS los genera/oculta (nunca un chip "Todos"). -->
+                <!-- 🔥 Ronda final de pulido (spec §7): sin `hidden` —
+                     el estado vacío ahora lo controla la clase
+                     catalogo__chips--vacio (JS), para poder reservar su
+                     altura en desktop en vez de sacarla del flujo. -->
+                <div id="catalogo-chips" class="catalogo__chips catalogo__chips--vacio" role="group" aria-label="Filtros activos"></div>
 
                 <div id="catalogo-grid" class="products__grid">
                     <!-- JS renderiza -->

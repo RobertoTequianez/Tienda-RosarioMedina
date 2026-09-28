@@ -606,6 +606,13 @@ function crearCard(producto, esPrimeraFila) {
     // espacio antes de que cargue la imagen (evita CLS).
     const loadingAttr = esPrimeraFila ? "" : ` loading="lazy"`;
 
+    // 🔥 Ronda final de pulido (spec §2/§3): antes esta card mostraba
+    // "$" + producto.precio crudo, sin "MXN" — era la única presentación
+    // de precio del sitio que no pasaba por formatearPrecioMXN() (modal y
+    // carrito ya lo usaban). Se corrige para que TODA presentación de
+    // precio visible use el mismo formateador único — nunca un segundo
+    // formatter paralelo (formatearPrecioMXN sigue viviendo solo aquí, en
+    // js/app.js — ver esa función más abajo).
     card.innerHTML = `
         <div class="product-card__image">
             <img src="${producto.imagen}" alt="${producto.nombre}" width="300" height="280" decoding="async"${loadingAttr}>
@@ -613,7 +620,7 @@ function crearCard(producto, esPrimeraFila) {
 
         <div class="product-card__info">
             <h3 class="product-card__title"><button type="button" class="product-card__title-btn">${producto.nombre}</button></h3>
-            <p class="product-card__price">$${producto.precio}</p>
+            <p class="product-card__price">${formatearPrecioMXN(producto.precio)}</p>
 
             <button type="button" class="product-card__btn"${agotado ? " disabled" : ""}>${agotado ? "AGOTADO" : "AGREGAR"}</button>
         </div>

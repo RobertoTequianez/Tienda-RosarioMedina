@@ -1,6 +1,26 @@
 .products {
 
   &__container {
+    // 🔥 Ronda final de pulido (spec §4/§5): antes sin max-width — en
+    // desktop grande (1920px) el grid se estiraba hasta ocupar casi todo
+    // el viewport, agrandando cards/imágenes solo porque había espacio
+    // disponible (causa real de "Home se siente más grande que
+    // Catálogo": no era la card en sí — es la MISMA crearCard() en
+    // ambos — sino el contenedor sin límite). 1320px ≈ 1200px (máx. del
+    // catálogo, scss/_catalogo.scss) + 10%: la Home queda "un poco más
+    // espaciosa" (spec: "10-15% más espaciosa, NO 30-50%"), nunca
+    // ilimitada. Centrado explícito para que el espacio sobrante quede
+    // como margen simétrico, no como cards gigantes.
+    // 🔥 Ronda final de pulido §4/§5 — nota de medición: 1320px (1200px
+    // del catálogo +10%) fue el primer intento, pero medía ~53% de
+    // diferencia real, NO 10-15% — el catálogo pierde 240px+gap de su
+    // propio contenedor en el sidebar, así que a IGUAL ancho de
+    // contenedor la Home (sin sidebar) siempre da cards más anchas.
+    // 1000px es el valor que, medido con Playwright, da ~12-13% de
+    // diferencia real de ancho de card (ver reporte) — no es una cifra
+    // arbitraria, es el resultado de la medición empírica pedida.
+    max-width: 1000px;
+    margin: 0 auto;
     padding: $spacing * 2;
     overflow: hidden; // se queda (no afecta filtros ahora)
   }
@@ -95,34 +115,18 @@
     margin-bottom: 15px;
   }
 
+  /* 🔥 Ronda final de pulido (spec §9/§10/§11/§12): AGREGAR/AGOTADO
+     comparten el mixin outline (mismo radio/altura/familia que
+     Filtros/Limpiar filtros) — AGOTADO es EXACTAMENTE el mismo botón con
+     el atributo `disabled` real (spec §12: "misma geometría, solo estado
+     visual", nunca un componente ni tamaño distinto). Se retira el
+     transform de hover/active (translateY/scale): la inversión de
+     color ya es la señal de interacción, sin "scale exagerado" (spec
+     §11). */
   &__btn {
+    @include btn-pill-outline;
     width: 100%;
-    padding: 12px;
-    border: 1px solid $color-black;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    letter-spacing: 1px;
-
     margin-top: auto;
-
-    -webkit-tap-highlight-color: transparent;
-
-    transition: all 0.25s ease;
-
-    @media (hover: hover) {
-      &:hover {
-        background: $color-black;
-        color: $color-white;
-        transform: translateY(-1px);
-      }
-    }
-
-    &:active {
-      background: $color-black;
-      color: $color-white;
-      transform: scale(0.96);
-    }
 
     /* 🔥 Feedback temporal al agregar (AGREGADO ✓). Reutiliza el mismo
        negro de :hover/:active, no introduce color nuevo. */
@@ -138,13 +142,11 @@
       cursor: not-allowed;
       background: transparent;
       color: $color-black;
-      transform: none;
 
       @media (hover: hover) {
         &:hover {
           background: transparent;
           color: $color-black;
-          transform: none;
         }
       }
     }

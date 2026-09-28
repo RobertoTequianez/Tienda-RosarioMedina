@@ -1,11 +1,11 @@
 @import 'variables';
 @import 'base';
+@import 'buttons'; // 🔥 antes de products/catalogo: ambos usan sus mixins btn-pill-*
 @import 'header';
 @import 'hero';
 @import 'products';
 @import 'catalogo';
 @import 'nosotros';
-@import 'buttons';
 @import "cart";
 @import "modal";
 @import "toast";
