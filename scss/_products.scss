@@ -17,52 +17,21 @@
   }
 }
 
-/*  FILTROS (PC = igual, MOBILE mejora) */
-.products__filters {
+/* 🔥 Feature 07A: la barra de filtros por categoría (pastillas
+   Todos/Bolsas/Lapiceras/Mochilas) que vivía aquí se retira — la Home ya
+   no necesita filtros (spec §29: el sistema completo de filtros se mudó
+   por completo a productos.html/scss/_catalogo.scss, con su propio
+   diseño de sidebar/panel). Esta regla quedaba sin uso en ninguna página
+   tras el cambio; se elimina en vez de dejar CSS muerto. */
+
+/* 🔥 Feature 07A — CTA "Ver todos los productos" bajo la selección
+   limitada de la Home. Mismo componente .btn-primary de siempre (sin
+   estilos propios de color/tamaño de fuente aquí), solo el espaciado de
+   layout para separarlo del grid y centrarlo. */
+.products__ver-todos {
   display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
-
-  padding: 0 15px;
-
-  overflow-x: auto;
-  overflow-y: hidden;
-  max-width: 100%;
-
-  justify-content: flex-start;
-  align-items: center;
-
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-
-  button {
-    flex-shrink: 0;
-    padding: 8px 14px;
-    border: 1px solid $color-black;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    letter-spacing: 1px;
-    white-space: nowrap;
-
-    transition: all 0.25s ease;
-
-    @media (hover: hover) {
-      &:hover {
-        background: $color-black;
-        color: $color-white;
-      }
-    }
-
-    &.active {
-      background: $color-black;
-      color: $color-white;
-    }
-  }
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  justify-content: center;
+  margin-top: $spacing * 1.5;
 }
 
 /*  CARD PREMIUM */
@@ -192,18 +161,5 @@
 
   .product-card__image img {
     height: 200px;
-  }
-
-  /*  MEJORA REAL DE FILTROS EN MOBILE */
-  .products__filters {
-    padding: 10px 15px;
-    gap: 8px;
-  }
-
-  .products__filters button {
-    padding: 7px 12px;
-    font-size: 11px;
-
-    border-radius: 20px; //  estilo moderno tipo app
   }
 }

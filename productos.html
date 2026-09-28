@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 🔥 Feature 07A (§43): metadata propia del catálogo, sin inventar
+         claims (envío/garantías/ubicación/descuentos) — mismo criterio ya
+         usado en index.html. -->
+    <title>Productos | Tienda Rosario</title>
+    <meta name="description" content="Explora el catálogo completo de Tienda Rosario: mochilas, bolsas y lapiceras. Filtra por categoría, precio y disponibilidad.">
+
+    <meta property="og:title" content="Productos | Tienda Rosario">
+    <meta property="og:description" content="Explora el catálogo completo de Tienda Rosario: mochilas, bolsas y lapiceras. Filtra por categoría, precio y disponibilidad.">
+    <meta property="og:type" content="website">
+    <!-- 🔥 Sin canonical/og:url (§43): todavía no existe un dominio definitivo,
+         mismo criterio que index.html. -->
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+<!-- 🔥 TOAST DE FEEDBACK (carrito + aviso de "Ofertas") -->
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- 🔝 HEADER (Feature 07A §11: mismo header que index.html — mismos ids,
+     mismo <nav>, mismo diseño mobile/desktop. Solo cambian los href de
+     Inicio/Nosotros/logo, que aquí apuntan a index.html en vez de a
+     anclas de esta página — ver js/app.js: activarNavegacion(). -->
+<header class="header">
+    <div class="header__container">
+
+        <button
+            type="button"
+            class="header__menu-toggle"
+            id="menu-toggle"
+            aria-label="Abrir menú"
+            aria-expanded="false"
+            aria-controls="header-nav"
+        >
+            <span class="header__menu-bar" aria-hidden="true"></span>
+            <span class="header__menu-bar" aria-hidden="true"></span>
+            <span class="header__menu-bar" aria-hidden="true"></span>
+        </button>
+
+        <!-- 🔥 Feature 07A (§13): en el catálogo, la marca regresa al Home
+             (no a un ancla de esta página) — enlace real, sin JS. -->
+        <a href="index.html" class="header__logo">
+            TIENDA ROSARIO
+        </a>
+
+        <!-- 🔥 Feature 07A (§11/§12): "Inicio" y "Nosotros" son enlaces
+             reales hacia index.html (Nosotros con su ancla real
+             index.html#nosotros — el navegador la resuelve nativamente al
+             cargar esa página, sin JS aquí). "Productos" es un enlace real
+             hacia esta misma página (recibe además su estado "página
+             actual" de forma estática, ver js/catalogo.js). "Ofertas"
+             reutiliza el mismo aviso de siempre, disparado por query param
+             al cargar esta página (ver js/catalogo.js). -->
+        <nav class="header__nav" id="header-nav" aria-label="Navegación principal">
+            <ul class="nav__list">
+                <li><a href="index.html" class="nav__link" id="nav-inicio">Inicio</a></li>
+                <li><a href="productos.html" class="nav__link" id="nav-productos">Productos</a></li>
+                <li><a href="productos.html?aviso=ofertas" class="nav__link" id="nav-ofertas">Ofertas</a></li>
+                <li><a href="index.html#nosotros" class="nav__link" id="nav-nosotros">Nosotros</a></li>
+            </ul>
+        </nav>
+
+        <div class="header__actions">
+            <button class="btn-cart" aria-label="Abrir carrito, vacío">
+
+  <svg xmlns="http://www.w3.org/2000/svg"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       aria-hidden="true">
+
+    <circle cx="9" cy="21" r="1"/>
+    <circle cx="20" cy="21" r="1"/>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+
+  </svg>
+
+  <span id="cart-count" aria-hidden="true">0</span>
+
+</button>
+        </div>
+
+    </div>
+</header>
+
+<main>
+
+<!-- 🔥 Feature 07A (§14/§15): sin hero fotográfico — cabecera de catálogo
+     limpia + breadcrumb semántico ("Inicio / Productos"). No inventa
+     categorías/subcategorías que todavía no existen (spec §15: solo
+     "Inicio / Productos" esta ronda). -->
+<section class="catalogo-header">
+    <div class="catalogo-header__container">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol class="breadcrumb__list">
+                <li><a href="index.html">Inicio</a></li>
+                <li aria-current="page">Productos</li>
+            </ol>
+        </nav>
+
+        <h1 class="catalogo-header__title">Productos</h1>
+        <p class="catalogo-header__subtitle">Encuentra mochilas, bolsas y lapiceras disponibles en Tienda Rosario.</p>
+
+    </div>
+</section>
+
+<!-- 🔥 Feature 07A (§16-§29): catálogo completo con búsqueda, filtros y
+     orden. Barra superior (búsqueda + orden + botón "Filtros" en mobile)
+     siempre visible; el panel de filtros (categorías/disponibilidad/
+     precio/limpiar) es un sidebar fijo en desktop y un panel desplegable
+     en mobile (mismo marcado, solo cambia cómo se muestra por CSS/JS —
+     ver scss/_catalogo.scss y js/catalogo.js). -->
+<section class="catalogo" id="catalogo">
+    <div class="catalogo__container">
+
+        <div class="catalogo__toolbar">
+            <div class="catalogo__busqueda">
+                <label for="catalogo-buscar" class="sr-only">Buscar productos</label>
+                <input type="search" id="catalogo-buscar" placeholder="Buscar productos" autocomplete="off">
+            </div>
+
+            <button
+                type="button"
+                id="catalogo-filtros-toggle"
+                class="catalogo__filtros-toggle"
+                aria-expanded="false"
+                aria-controls="catalogo-filtros"
+            >
+                Filtros
+            </button>
+
+            <div class="catalogo__orden">
+                <label for="catalogo-orden" class="sr-only">Ordenar por</label>
+                <select id="catalogo-orden">
+                    <option value="predeterminado">Relevancia / Predeterminado</option>
+                    <option value="precio-asc">Precio: menor a mayor</option>
+                    <option value="precio-desc">Precio: mayor a menor</option>
+                    <option value="nombre-az">Nombre A-Z</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="catalogo__cuerpo">
+
+            <!-- 🔥 §27/§28: MISMO panel de filtros para desktop (sidebar
+                 siempre visible, ver CSS min-width) y mobile (panel
+                 desplegable, toggle "Filtros" de arriba) — una sola fuente
+                 de verdad, nunca dos UIs de filtros a sincronizar. -->
+            <aside class="catalogo__filtros" id="catalogo-filtros">
+
+                <!-- 🔥 Ajuste UX (revisión previa a commit): cabecera propia
+                     del drawer, SOLO visible en mobile (ver
+                     scss/_catalogo.scss — en desktop, sidebar siempre
+                     visible, esta cabecera no aporta nada y se oculta):
+                     título + botón cerrar real, señal visual obvia para
+                     salir del panel además de Escape/overlay. -->
+                <div class="catalogo__filtros-header">
+                    <h2 class="catalogo__filtros-header-titulo">Filtros</h2>
+                    <button
+                        type="button"
+                        id="catalogo-filtros-cerrar"
+                        class="catalogo__filtros-cerrar"
+                        aria-label="Cerrar filtros"
+                    >&times;</button>
+                </div>
+
+                <div class="catalogo__filtros-grupo">
+                    <h2 class="catalogo__filtros-titulo">Categorías</h2>
+                    <!-- 🔥 §17/§18: NUNCA hardcodeado — js/catalogo.js
+                         genera estos botones dinámicamente a partir de las
+                         categorías REALES encontradas en data/productos.js
+                         (obtenerCategorias()), con "Todos" como opción de
+                         sistema (no como categoría de producto). -->
+                    <div id="catalogo-categorias" class="catalogo__categorias" role="group" aria-label="Filtrar por categoría"></div>
+                </div>
+
+                <div class="catalogo__filtros-grupo">
+                    <h2 class="catalogo__filtros-titulo">Disponibilidad</h2>
+                    <label class="catalogo__checkbox">
+                        <input type="checkbox" id="catalogo-en-existencia">
+                        En existencia
+                    </label>
+                </div>
+
+                <div class="catalogo__filtros-grupo">
+                    <!-- 🔥 §22: fieldset/legend real (no solo un <h2>) para
+                         agrupar accesiblemente los dos campos numéricos
+                         relacionados (precio mínimo/máximo). -->
+                    <fieldset class="catalogo__precio">
+                        <legend class="catalogo__filtros-titulo">Precio</legend>
+                        <div class="catalogo__precio-inputs">
+                            <label for="catalogo-precio-min">
+                                Precio mínimo
+                                <input type="number" id="catalogo-precio-min" min="0" inputmode="numeric" placeholder="$0">
+                            </label>
+                            <label for="catalogo-precio-max">
+                                Precio máximo
+                                <input type="number" id="catalogo-precio-max" min="0" inputmode="numeric" placeholder="$9999">
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <button type="button" id="catalogo-limpiar-filtros" class="catalogo__limpiar">
+                    Limpiar filtros
+                </button>
+
+            </aside>
+
+            <!-- 🔥 §33/§28: overlay del panel de filtros SOLO en mobile
+                 (mismo patrón visual que el resto del sitio: fondo que
+                 cierra al tocarlo) — nunca se confunde con el overlay del
+                 carrito (id distinto, ver scss/_catalogo.scss). -->
+            <div id="catalogo-filtros-overlay" class="catalogo__filtros-overlay"></div>
+
+            <div class="catalogo__resultados">
+
+                <p id="catalogo-contador" class="catalogo__contador" role="status" aria-live="polite"></p>
+
+                <div id="catalogo-grid" class="products__grid">
+                    <!-- JS renderiza -->
+                </div>
+
+                <!-- 🔥 §25: estado vacío limpio, con acción real para
+                     recuperarse (nunca un grid vacío sin explicación). -->
+                <div id="catalogo-sin-resultados" class="catalogo__sin-resultados" hidden>
+                    <p>No encontramos productos con estos filtros.</p>
+                    <button type="button" class="catalogo__limpiar" data-accion="limpiar-desde-vacio">Limpiar filtros</button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+</main>
+
+<a class="whatsapp-btn" href="#" hidden aria-label="Contactar por WhatsApp" target="_blank" rel="noopener noreferrer">
+  <svg xmlns="http://www.w3.org/2000/svg"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       aria-hidden="true">
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+  </svg>
+</a>
+
+<div id="cart-overlay" class="cart-overlay"></div>
+
+<div id="cart-panel" class="cart-panel">
+
+  <div class="cart-panel__header">
+    <h3 id="cart-title">Carrito</h3>
+    <button id="close-cart" class="cart-panel__close" aria-label="Cerrar carrito">&times;</button>
+  </div>
+
+  <div id="cart-items" class="cart-panel__items"></div>
+
+  <div id="cart-summary" class="cart-panel__summary"></div>
+
+</div>
+
+<!-- 🔻 FOOTER (§45: reutilizado sin rediseñar) -->
+<footer class="footer">
+    <p>© 2026 Tienda Rosario</p>
+</footer>
+
+<!-- 🔥 MODAL PRODUCTO (§10/§31: idéntico a index.html — mismo marcado,
+     misma lógica en js/app.js, sin duplicar nada). -->
+<div id="product-modal" class="modal">
+  <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+
+    <button id="close-modal" class="modal__close" aria-label="Cerrar detalle del producto">&times;</button>
+
+    <div class="modal__body">
+
+      <div class="modal__carousel">
+        <div class="modal__image" id="modal-image">
+          <div class="modal__track" id="modal-track"></div>
+        </div>
+
+        <div class="modal__controls" id="modal-controls">
+          <button class="modal__arrow modal__arrow--left" aria-label="Imagen anterior">&#10094;</button>
+          <div class="modal__dots" id="modal-dots"></div>
+          <button class="modal__arrow modal__arrow--right" aria-label="Imagen siguiente">&#10095;</button>
+        </div>
+      </div>
+
+      <div class="modal__info">
+        <h2 id="modal-title" class="modal__title"></h2>
+
+        <p class="modal__price-block">
+          <span class="modal__price-label">Precio:</span>
+          <span id="modal-price" class="modal__price"></span>
+        </p>
+
+        <p id="modal-description" class="modal__description"></p>
+
+        <div id="modal-more-wrap" class="modal__more">
+          <button
+            type="button"
+            id="modal-more-toggle"
+            class="modal__more-toggle"
+            aria-expanded="false"
+            aria-controls="modal-more-panel"
+          >
+            <span class="modal__more-text">Más información</span>
+            <span class="modal__more-chevron" aria-hidden="true">&rsaquo;</span>
+          </button>
+          <div id="modal-more-panel" class="modal__more-panel" hidden></div>
+        </div>
+
+        <div class="modal__qty" id="modal-qty">
+          <button type="button" id="modal-qty-minus" class="modal__qty-btn" aria-label="Disminuir cantidad">&minus;</button>
+          <span id="modal-qty-value" class="modal__qty-value">1</span>
+          <button type="button" id="modal-qty-plus" class="modal__qty-btn" aria-label="Aumentar cantidad">+</button>
+        </div>
+
+        <button type="button" class="product-card__btn" id="modal-add">
+          AGREGAR
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 🔥 JS — mismo orden de dependencia que index.html (data → carrito →
+     app → whatsapp), más js/catalogo.js al final (depende de productos
+     ya cargados y de crearCard()/mostrarToast(), definidas en app.js). -->
+<script src="data/productos.js"></script>
+<script src="js/carrito.js"></script>
+<script src="js/app.js"></script>
+<script src="js/whatsapp.js"></script>
+<script src="js/catalogo.js"></script>
+
+</body>
+</html>

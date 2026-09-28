@@ -1,0 +1,427 @@
+/* 🔥 Feature 07A — CATÁLOGO COMPLETO (productos.html)
+   Reutiliza .products__grid/.product-card (scss/_products.scss) tal cual
+   — sin duplicar el diseño de card (spec §30). Todo lo de aquí es nuevo:
+   cabecera de catálogo, breadcrumb, barra de herramientas, panel de
+   filtros (sidebar en desktop / drawer en mobile) y estados de
+   resultados. */
+
+/* CABECERA DE CATÁLOGO (§14: sin hero fotográfico) */
+.catalogo-header {
+  padding: $spacing * 2 $spacing * 2 0;
+
+  &__container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  &__title {
+    font-size: 28px;
+    margin: 10px 0 8px;
+  }
+
+  &__subtitle {
+    color: $color-gray;
+    font-size: 14px;
+    margin: 0 0 10px;
+    max-width: 60ch;
+  }
+}
+
+/* BREADCRUMB (§15) — semántico, discreto, sin sobrecargar. */
+.breadcrumb {
+  &__list {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    color: $color-gray;
+  }
+
+  li:not(:last-child)::after {
+    content: "/";
+    margin-left: 6px;
+    color: $color-gray;
+  }
+
+  a {
+    color: $color-gray;
+    text-decoration: underline;
+
+    @media (hover: hover) {
+      &:hover {
+        color: $color-black;
+      }
+    }
+  }
+
+  li[aria-current="page"] {
+    color: $color-black;
+    font-weight: 500;
+  }
+}
+
+/* CATÁLOGO: layout general */
+.catalogo {
+  &__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: $spacing $spacing * 2 $spacing * 3;
+  }
+}
+
+/* BARRA SUPERIOR: buscador + toggle de filtros (mobile) + orden. Siempre
+   visible en ambos layouts (§16/§28). */
+.catalogo__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: $spacing;
+
+  input[type="search"],
+  select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 10px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: $radius;
+    background: $color-white;
+  }
+}
+
+.catalogo__busqueda {
+  flex: 1 1 220px;
+
+  input {
+    width: 100%;
+  }
+}
+
+.catalogo__orden {
+  flex: 0 0 auto;
+
+  select {
+    min-width: 190px;
+  }
+}
+
+/* Botón "Filtros": oculto en desktop (el sidebar ya está siempre
+   visible ahí, ver breakpoint más abajo), visible en mobile. */
+.catalogo__filtros-toggle {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border: 1px solid $color-black;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border-radius: $radius;
+
+  &[aria-expanded="true"] {
+    background: $color-black;
+    color: $color-white;
+  }
+}
+
+/* CUERPO: sidebar de filtros + resultados */
+.catalogo__cuerpo {
+  display: block;
+}
+
+.catalogo__resultados {
+  min-width: 0; // evita que el grid empuje el layout en flex/grid padres
+}
+
+.catalogo__contador {
+  margin: 0 0 15px;
+  font-size: 13px;
+  color: $color-gray;
+}
+
+/* PANEL DE FILTROS — mismo marcado para desktop (sidebar) y mobile
+   (drawer). Por defecto (mobile-first): oculto fuera de pantalla,
+   se muestra al activar catalogo__filtros--open. */
+.catalogo__filtros {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(85vw, 320px);
+  background: $color-white;
+  z-index: 1001;
+  padding: $spacing * 1.5 $spacing;
+  overflow-y: auto;
+
+  transform: translateX(-100%);
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: transform 0.25s ease;
+  }
+
+  &--open {
+    transform: translateX(0);
+  }
+}
+
+/* 🔥 Ajuste UX (revisión previa a commit, §2/§3): cabecera del drawer,
+   SOLO tiene sentido en mobile (en desktop la sidebar nunca se
+   abre/cierra, ver override desktop más abajo). "sticky" DENTRO del
+   propio panel scrolleable (no del documento): permanece visible como
+   ancla de cierre mientras el resto del contenido del panel hace scroll
+   (spec §5), sin necesitar reestructurar el marcado en header/body
+   separados. */
+.catalogo__filtros-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $color-white;
+  margin: (-$spacing * 1.5) (-$spacing) $spacing * 1.25;
+  padding: $spacing * 1.1 $spacing $spacing * 0.75;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.catalogo__filtros-header-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Botón cerrar [X]: mismo lenguaje visual que el resto de cierres del
+   sitio (modal/carrito ya usan &times; sobre fondo neutro) — sin ícono
+   externo ni librería, touch target cómodo (40x40, cerca de las 44px
+   recomendadas) sin ser exageradamente grande. */
+.catalogo__filtros-cerrar {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  background: $color-white;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: $color-black;
+
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  &:active {
+    background: rgba(0, 0, 0, 0.08);
+  }
+}
+
+.catalogo__filtros-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+
+  &--visible {
+    display: block;
+  }
+}
+
+.catalogo__filtros-grupo {
+  margin-bottom: $spacing * 1.25;
+}
+
+.catalogo__filtros-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.catalogo__categorias {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.catalogo__categoria-btn {
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: $radius;
+
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  // 🔥 §41: el estado seleccionado no depende únicamente del color — el
+  // peso de fuente + el indicador lateral (borde) también lo comunican.
+  &.is-active {
+    background: rgba(255, 45, 117, 0.08);
+    border-color: $color-accent;
+    font-weight: 600;
+  }
+}
+
+.catalogo__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.catalogo__precio {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.catalogo__precio-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: $color-gray;
+  }
+
+  input {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: $radius;
+  }
+}
+
+.catalogo__limpiar {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid $color-black;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border-radius: $radius;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: opacity 0.15s ease, border-color 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background: $color-black;
+      color: $color-white;
+    }
+  }
+
+  /* 🔥 Ajuste UX (revisión previa a commit, §7): visualmente secundario
+     cuando NO hay ningún filtro aplicado (nunca deshabilitado de verdad
+     — sigue siendo clickeable, spec: "puede permanecer disponible").
+     Deja de parecer la acción principal de la sidebar sin esconderla ni
+     quitarle accesibilidad (sin :disabled, sin aria-disabled: seguiría
+     siendo anunciada igual por lectores de pantalla si se ocultara solo
+     por opacidad de verdad no-interactiva, así que aquí solo se atenúa
+     visualmente). */
+  &--secundario {
+    opacity: 0.5;
+    border-color: rgba(0, 0, 0, 0.2);
+
+    @media (hover: hover) {
+      &:hover {
+        background: transparent;
+        color: $color-black;
+        opacity: 0.75;
+      }
+    }
+  }
+}
+
+/* ESTADO SIN RESULTADOS (§25) */
+.catalogo__sin-resultados {
+  text-align: center;
+  padding: $spacing * 3 $spacing;
+  color: $color-gray;
+
+  p {
+    margin: 0 0 15px;
+  }
+
+  .catalogo__limpiar {
+    width: auto;
+    padding: 10px 20px;
+    margin: 0 auto;
+  }
+}
+
+/* 📱 DESKTOP (≥992px): sidebar de filtros SIEMPRE visible, discreto, sin
+   quitarle protagonismo al catálogo (§27). El botón "Filtros" deja de
+   tener sentido (nada que abrir/cerrar) y se oculta. */
+@media (min-width: 992px) {
+  .catalogo__filtros-toggle {
+    display: none;
+  }
+
+  .catalogo__filtros-overlay {
+    display: none !important;
+  }
+
+  .catalogo__cuerpo {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: $spacing * 2;
+    align-items: start;
+  }
+
+  .catalogo__filtros {
+    // 🔥 Ajuste UX (revisión previa a commit, §6): se EVALUÓ "sticky" acá
+    // (top: header-height + respiro) pero se decidió NO forzarlo, tal
+    // como habilita explícitamente el propio pedido ("si la estructura
+    // CSS hace que sticky sea frágil: no forzarlo y reportar la
+    // decisión"). Diagnóstico: `html`/`body` tienen `overflow-x: hidden`
+    // preexistente y protegido (scss/_base.scss, fix histórico de scroll
+    // horizontal fantasma, ajeno a esta feature). Por la regla de cómputo
+    // de CSS "si un eje no es visible, el otro eje visible se computa
+    // como auto", `body` termina con un overflow-y efectivo "auto" no
+    // solicitado — eso lo convierte en un scroll container propio, pero
+    // uno que en la práctica nunca se desplaza (el scroll real de la
+    // página ocurre a nivel viewport/html). El navegador calcula
+    // `position: sticky` contra ESE contenedor (que no se mueve), por lo
+    // que la sidebar termina comportándose como `static` sin importar el
+    // valor de `top`. Corregirlo de raíz requeriría tocar las reglas
+    // globales protegidas de `_base.scss` — fuera del alcance de este
+    // ajuste. Se mantiene `static` (comportamiento de la Feature 07A
+    // original, ya validado) y se reporta esta decisión.
+    position: static;
+    width: auto;
+    transform: none;
+    z-index: auto;
+    padding: 0;
+    overflow-y: visible;
+    background: transparent;
+  }
+
+  // La cabecera "Filtros [X]" del drawer no aporta nada en desktop (la
+  // sidebar nunca se abre/cierra ahí) — se oculta, sin quitarla del DOM
+  // (mismo componente HTML reutilizado en ambos layouts, spec §27/§28).
+  .catalogo__filtros-header {
+    display: none;
+  }
+}

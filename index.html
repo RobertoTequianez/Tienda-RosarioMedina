@@ -106,25 +106,24 @@
              pueda distinguirlos de forma robusta aunque Productos y
              Ofertas compartan el mismo href="#productos" — el estado
              activo/aria-current se calcula por id, nunca por href. -->
+        <!-- 🔥 Feature 07A: "Productos" y "Ofertas" dejan de ser anclas
+             internas de esta página (ya no existe un catálogo completo
+             dentro de la Home) y pasan a ser enlaces reales hacia
+             productos.html — funcionan con mouse/touch/teclado de forma
+             nativa, sin JS. "Ofertas" no inventa una página/promoción
+             propia (todavía no existe ese modelo real, ver auditoría):
+             navega al catálogo real con ?aviso=ofertas, que dispara ahí
+             el mismo aviso de siempre ("Por el momento no hay ofertas
+             disponibles."), ahora en contexto del catálogo (ver
+             js/catalogo.js). "Inicio" y "Nosotros" siguen siendo anclas
+             reales de ESTA página y mantienen su navegación suave
+             intencional existente (js/app.js: navegarASeccion), sin
+             cambios. -->
         <nav class="header__nav" id="header-nav" aria-label="Navegación principal">
             <ul class="nav__list">
                 <li><a href="#inicio" class="nav__link" id="nav-inicio">Inicio</a></li>
-                <li><a href="#productos" class="nav__link" id="nav-productos">Productos</a></li>
-                <!-- 🔥 "Ofertas": no existe todavía un modelo real de
-                     ofertas (sin flag de oferta/precio anterior/descuento
-                     en data/productos.js) — no se inventa ninguno. El
-                     enlace lleva al catálogo real (misma sección que
-                     "Productos") y, además, informa brevemente mediante
-                     el sistema de toast ya existente (ver
-                     js/app.js). Nunca es un enlace roto ni una sección
-                     vacía creada solo para justificar el ítem de menú.
-                     Nunca recibe estado activo/aria-current: no es una
-                     sección real (ver js/app.js: establecerSeccionActiva). -->
-                <li><a href="#productos" class="nav__link" id="nav-ofertas">Ofertas</a></li>
-                <!-- 🔥 "Nosotros": ahora existe una sección real (más abajo,
-                     después de Productos) — usa el mismo sistema de
-                     navegación intencional centralizado (navegarASeccion)
-                     que Inicio/Productos, con su propio scroll-margin-top. -->
+                <li><a href="productos.html" class="nav__link" id="nav-productos">Productos</a></li>
+                <li><a href="productos.html?aviso=ofertas" class="nav__link" id="nav-ofertas">Ofertas</a></li>
                 <li><a href="#nosotros" class="nav__link" id="nav-nosotros">Nosotros</a></li>
             </ul>
         </nav>
@@ -190,42 +189,54 @@
     <div class="hero-video__content">
         <h1>Nueva colección</h1>
         <p>Descubre lo último en tendencia</p>
-        <!-- 🔥 Última ronda de ajustes: "Comprar ahora" queda mencionado
-             explícitamente entre los disparadores de navegación intencional
-             (junto a Inicio/Productos/Nosotros) que deben usar el mismo
-             sistema centralizado de scroll — antes este botón no tenía
-             ningún comportamiento cableado. Destino lógico: el catálogo
-             real (#productos, mismo destino que "Productos"). type="button"
-             explícito (no hay <form> en la página, pero se deja explícito
-             por auditoría/robustez). -->
-        <button type="button" class="btn-primary" id="btn-comprar-ahora">Comprar ahora</button>
+        <!-- 🔥 Feature 07A (punto 9): ahora que existe un catálogo completo
+             independiente, "Comprar ahora" ya no tiene sentido bajando a una
+             lista completa dentro de la Home (esa lista ya no existe aquí:
+             la Home solo muestra una selección limitada, ver
+             "productos-home"). Pasa a ser un enlace real hacia el catálogo
+             completo (productos.html) — un <a> real resuelve la navegación
+             sin JS adicional, funciona con mouse/touch/teclado de forma
+             nativa. Mismo estilo visual (.btn-primary), sin cambios. -->
+        <a class="btn-primary" href="productos.html" id="btn-comprar-ahora">Comprar ahora</a>
     </div>
 
 </section>
 
-<!-- 🛍 PRODUCTOS -->
-<!-- 🔥 Feature 06: id="productos" pasa a vivir en la <section> (destino
-     real de "Productos"/"Ofertas" en la nav), no en el grid interno —
-     así el título "Productos" queda visible al hacer scroll (con
-     scroll-margin-top, ver scss/_products.scss) en vez de quedar oculto
-     tras el header fixed. El grid interno se renombra a
-     "productos-grid" para no duplicar el id (js/app.js actualizado). -->
-<section class="products" id="productos">
+<!-- 🛍 PRODUCTOS DESTACADOS (Feature 07A) -->
+<!-- 🔥 Feature 07A: la Home deja de mostrar el catálogo completo (ese
+     comportamiento se movió a productos.html, ver auditoría del
+     reporte). Aquí solo se renderiza una selección limitada y centralizada
+     (data/home-config.js: HOME_CONFIG), nunca más de HOME_CONFIG.maxProductos
+     (8) — el número es el mismo en todos los dispositivos, el responsive
+     solo cambia cuántas columnas de grid se ven (igual que ya hacía el
+     catálogo completo antes). No se elimina ningún producto del catálogo:
+     solo se limita lo que se muestra aquí. Sin filtros: el sistema completo
+     de categorías/búsqueda/precio/orden vive únicamente en productos.html
+     (spec §29 del requerimiento). id="destacados" ya no es destino de
+     ningún link de navegación (Productos/Ofertas ahora van a
+     productos.html) — se conserva solo como referencia semántica de la
+     sección, sin scroll-margin-top propio (no lo necesita). -->
+<section class="products products--home" id="destacados">
     <div class="products__container">
 
-        <h2 class="section-title">Productos</h2>
+        <!-- 🔥 Título sin inventar datos que no existen ("Más vendidos",
+             "Populares"): no hay campo real de ventas/popularidad en
+             data/productos.js (ver auditoría). "Nuestra selección" es
+             neutral y honesto sobre el origen (selección editorial/demo,
+             no un ranking calculado). -->
+        <h2 class="section-title">Nuestra selección</h2>
 
-        <!--  FILTROS -->
-        <div class="products__filters">
-            <button data-categoria="all">Todos</button>
-            <button data-categoria="bolsas">Bolsas</button>
-            <button data-categoria="lapiceras">Lapiceras</button>
-            <button data-categoria="mochilas">Mochilas</button>
+        <!--  GRID LIMITADO -->
+        <div id="productos-home-grid" class="products__grid">
+            <!-- JS renderiza como máximo HOME_CONFIG.maxProductos productos -->
         </div>
 
-        <!--  GRID -->
-        <div id="productos-grid" class="products__grid">
-            <!-- JS renderiza -->
+        <!-- 🔥 Feature 07A (punto 7): <a> real, no botón+JS — funciona con
+             mouse/touch/teclado de forma nativa. Diseño consistente con
+             .btn-primary (mismo usado en "Comprar ahora"), sin ser un botón
+             exagerado. -->
+        <div class="products__ver-todos">
+            <a class="btn-primary" href="productos.html">Ver todos los productos</a>
         </div>
 
     </div>
@@ -406,6 +417,7 @@
 
 <!-- 🔥 JS -->
 <script src="data/productos.js"></script>
+<script src="data/home-config.js"></script>
 <script src="js/carrito.js"></script>
 <script src="js/app.js"></script>
 <script src="js/whatsapp.js"></script>

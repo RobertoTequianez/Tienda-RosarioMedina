@@ -1,5 +1,3 @@
-let categoriaActual = "all";
-
 // PRODUCTO SELECCIONADO
 let productoSeleccionado = null;
 
@@ -206,8 +204,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    renderProductos();
-    activarFiltros();
+    // 🔥 Feature 07A: renderProductosDestacadosHome() se auto-detecta por
+    // elemento (busca "#productos-home-grid") — en productos.html ese
+    // elemento no existe, así que en esa página esta llamada no hace nada
+    // (la construcción del catálogo completo la maneja js/catalogo.js,
+    // cargado aparte, sin duplicar esta función).
+    renderProductosDestacadosHome();
 
     actualizarContador();
     renderCarrito();
@@ -258,14 +260,20 @@ function navegarASeccion(idDestino) {
    ==================================================================
    Único punto que decide qué link luce "activo" (clase .is-active +
    aria-current="location"). Se aplica SOLO a los links de secciones
-   reales (Inicio/Productos/Nosotros, ver SECCIONES_NAVEGABLES) — "Ofertas"
-   nunca puede quedar marcado como activo porque no representa una sección
-   propia (punto 5: al hacer clic en Ofertas, el estado activo final debe
-   quedar en Productos). */
-const SECCIONES_NAVEGABLES = ["inicio", "productos", "nosotros"];
+   reales DENTRO DE ESTA PÁGINA (Inicio/Nosotros, ver SECCIONES_NAVEGABLES).
+
+   🔥 Feature 07A: "productos" se retira de esta lista. "Productos" en el
+   header dejó de ser un ancla interna (ya no existe un catálogo completo
+   dentro de la Home, navega a productos.html como enlace real, ver
+   auditoría/index.html) — nunca vuelve a recibir estado activo/aria-current
+   por scroll-spy en esta página. En productos.html, "Productos" recibe su
+   propio estado "página actual" de forma estática (ver js/catalogo.js:
+   marcarNavProductosComoPaginaActual), sin depender de este mecanismo de
+   scroll-spy (no hay secciones que scrollear ahí). "Ofertas" tampoco
+   participa: nunca representó una sección propia (punto 5, sin cambios). */
+const SECCIONES_NAVEGABLES = ["inicio", "nosotros"];
 const IDS_LINK_POR_SECCION = {
     inicio: "nav-inicio",
-    productos: "nav-productos",
     nosotros: "nav-nosotros",
 };
 
@@ -413,84 +421,66 @@ function activarDeteccionFinDePagina() {
     );
 }
 
-/* 🔥 Feature 06 (base) + última ronda de ajustes — NAVEGACIÓN DEL HEADER
-   Todo enlace de navegación intencional (Inicio/Productos/Nosotros/logo/
-   "Comprar ahora") pasa por navegarASeccion() + establecerSeccionActiva():
-   nunca se duplica la lógica de scroll por link. "Ofertas" es el único
-   caso especial: no existe todavía un modelo real de ofertas (sin flag/
-   precio anterior/descuento en data/productos.js, confirmado en la
-   auditoría), así que además de llevar al catálogo real (mismo destino
-   que "Productos"), informa brevemente con el sistema de toast ya
-   existente — nunca se inventa una promoción ni se crea una sección
-   vacía solo para justificar el enlace, y el estado activo final queda
-   en Productos (punto 5), nunca en Ofertas. */
+/* 🔥 Feature 06 (base) + última ronda de ajustes + Feature 07A —
+   NAVEGACIÓN DEL HEADER
+   ==================================================================
+   El header (index.html y productos.html) comparte el MISMO marcado —
+   mismos ids, mismo <nav> (spec Feature 07A §11) — pero cada página le da
+   a "Inicio"/"Nosotros"/logo un href distinto según dónde vive realmente
+   el destino:
+     - En index.html: anclas reales de ESTA página (href="#inicio"/
+       "#nosotros") → se interceptan con navegarASeccion() (scroll suave
+       intencional existente, SIN CAMBIOS).
+     - En productos.html: enlaces reales hacia OTRA página
+       (href="index.html"/"index.html#nosotros") → NO se interceptan, el
+       navegador los resuelve nativamente (no hay nada que scrollear en
+       ESTA página): "no usar JavaScript innecesario si un <a> real
+       resuelve la navegación" (spec §7, aplicado aquí también).
+   Se decide en runtime leyendo el propio atributo href de cada link (si
+   empieza con "#" es un ancla de esta página) — así una única función
+   sirve para ambas páginas sin duplicar lógica ni necesitar detectar en
+   qué página está.
+
+   "Productos"/"Ofertas"/"Comprar ahora" YA NO participan de este mecanismo
+   en ninguna página: ahora son enlaces reales hacia productos.html (con o
+   sin ?aviso=ofertas), resueltos enteramente por el navegador — ver
+   index.html/productos.html. El aviso de "Ofertas" ("Por el momento no
+   hay ofertas disponibles.") se dispara del lado de productos.html al
+   leer ese query param (ver js/catalogo.js), nunca aquí. */
 function activarNavegacion() {
     const enlaceInicio = document.getElementById("nav-inicio");
-    const enlaceProductos = document.getElementById("nav-productos");
-    const enlaceOfertas = document.getElementById("nav-ofertas");
     const enlaceNosotros = document.getElementById("nav-nosotros");
     const logo = document.querySelector(".header__logo");
-    const btnComprarAhora = document.getElementById("btn-comprar-ahora");
 
-    if (enlaceInicio) {
-        enlaceInicio.addEventListener("click", (e) => {
+    function interceptarSiEsAnclaLocal(enlace, idSeccion) {
+        if (!enlace) return;
+
+        const href = enlace.getAttribute("href") || "";
+        if (!href.startsWith("#")) return; // enlace real hacia otra página: sin JS
+
+        enlace.addEventListener("click", (e) => {
             e.preventDefault();
             marcarNavegacionProgramatica();
-            navegarASeccion("inicio");
-            establecerSeccionActiva("inicio");
+            navegarASeccion(idSeccion);
+            establecerSeccionActiva(idSeccion);
         });
     }
 
-    if (enlaceProductos) {
-        enlaceProductos.addEventListener("click", (e) => {
-            e.preventDefault();
-            marcarNavegacionProgramatica();
-            navegarASeccion("productos");
-            establecerSeccionActiva("productos");
-        });
-    }
-
-    if (enlaceOfertas) {
-        enlaceOfertas.addEventListener("click", (e) => {
-            // 🔥 Ofertas navega al mismo destino real que Productos, usando
-            // el mismo sistema centralizado (nunca una segunda
-            // implementación de scroll) — preventDefault() porque ahora el
-            // desplazamiento lo controla enteramente navegarASeccion().
-            e.preventDefault();
-            marcarNavegacionProgramatica();
-            navegarASeccion("productos");
-            establecerSeccionActiva("productos"); // nunca "Ofertas" (no es sección real)
-            mostrarToast(null, {
-                tipo: "info",
-                mensaje: "Por el momento no hay ofertas disponibles.",
-            });
-        });
-    }
-
-    if (enlaceNosotros) {
-        enlaceNosotros.addEventListener("click", (e) => {
-            e.preventDefault();
-            marcarNavegacionProgramatica();
-            navegarASeccion("nosotros");
-            establecerSeccionActiva("nosotros");
-        });
-    }
+    interceptarSiEsAnclaLocal(enlaceInicio, "inicio");
+    interceptarSiEsAnclaLocal(enlaceNosotros, "nosotros");
 
     if (logo) {
-        logo.addEventListener("click", (e) => {
-            e.preventDefault();
-            marcarNavegacionProgramatica();
-            navegarASeccion("inicio");
-            establecerSeccionActiva("inicio");
-        });
-    }
-
-    if (btnComprarAhora) {
-        btnComprarAhora.addEventListener("click", () => {
-            marcarNavegacionProgramatica();
-            navegarASeccion("productos");
-            establecerSeccionActiva("productos");
-        });
+        const hrefLogo = logo.getAttribute("href") || "";
+        if (hrefLogo.startsWith("#")) {
+            logo.addEventListener("click", (e) => {
+                e.preventDefault();
+                marcarNavegacionProgramatica();
+                navegarASeccion("inicio");
+                establecerSeccionActiva("inicio");
+            });
+        }
+        // Si no empieza con "#" (productos.html: href="index.html"), es un
+        // enlace real hacia el Home — el navegador lo resuelve solo.
     }
 
     activarObservadorSecciones();
@@ -1307,45 +1297,51 @@ function desplazarCarruselA(indice) {
 // vive en cerrarModal() (ver sección MODAL más arriba)
 
 
-/* RENDER PRODUCTOS */
-function renderProductos() {
-    // 🔥 Feature 06: id renombrado de "productos" a "productos-grid" —
-    // el id "productos" ahora vive en la <section> (destino real del
-    // enlace de navegación "Productos"/"Ofertas"), no en el grid interno.
-    const contenedor = document.getElementById("productos-grid");
+/* 🔥 Feature 07A — RENDER "PRODUCTOS DESTACADOS" (SOLO HOME)
+   ==================================================================
+   Reemplaza al antiguo renderProductos()/activarFiltros() (catálogo
+   completo con filtro simple por categoría, ahora vivo en
+   productos.html/js/catalogo.js, con su propio sistema de filtros/
+   búsqueda/orden — no se duplica esa lógica aquí).
+
+   Esta función SOLO existe para la Home: busca el grid limitado
+   ("productos-home-grid", ver index.html) y si no lo encuentra (p. ej. en
+   productos.html, que no tiene ese elemento) no hace nada — así una
+   misma app.js compartida por ambas páginas no necesita detectar en qué
+   página está.
+
+   Fuente de qué productos mostrar y cuántos: data/home-config.js
+   (HOME_CONFIG), el único punto centralizado (spec §5: nunca IDs
+   dispersos por HTML/JS). Nunca inventa productos ni cambia
+   stock/disponibilidad/precio — solo selecciona y limita cuáles de los
+   productos REALES (data/productos.js) se muestran aquí. Reutiliza
+   crearCard() (el MISMO componente de card que usa productos.html): no
+   existen dos diseños de card distintos (spec §30). */
+function renderProductosDestacadosHome() {
+    const contenedor = document.getElementById("productos-home-grid");
     if (!contenedor) return;
 
     contenedor.innerHTML = "";
 
-    const filtrados = productos.filter(p =>
-        categoriaActual === "all" || p.categoria === categoriaActual
-    );
+    const config = (typeof HOME_CONFIG !== "undefined" && HOME_CONFIG) || { maxProductos: 8, destacados: [] };
+    const maximo = Number.isFinite(config.maxProductos) ? config.maxProductos : 8;
+    const idsDestacados = Array.isArray(config.destacados) ? config.destacados : [];
 
-    // 🔥 Feature 04 (rendimiento): las primeras 4 cards (una fila completa
-    // en el grid de escritorio, ver scss/_products.scss) se consideran
-    // "primera fila" y se cargan eager (sin lazy loading) porque pueden
-    // estar visibles de entrada; el resto usa loading="lazy" — ver
+    // Se preserva el ORDEN declarado en HOME_CONFIG.destacados (no el orden
+    // de data/productos.js): permite curar manualmente la selección. Un ID
+    // que ya no exista en data/productos.js (producto eliminado/renombrado)
+    // se ignora de forma segura, nunca rompe el render.
+    const seleccion = idsDestacados
+        .map((id) => productos.find((p) => p.id === id))
+        .filter(Boolean)
+        .slice(0, maximo);
+
+    // 🔥 Feature 04 (rendimiento, sin cambios de criterio): primera fila
+    // (4 cards, mismo criterio que antes) eager, resto lazy — ver
     // crearCard().
-    filtrados.forEach((producto, indice) => {
+    seleccion.forEach((producto, indice) => {
         const card = crearCard(producto, indice < 4);
         contenedor.appendChild(card);
-    });
-}
-
-/* FILTROS */
-function activarFiltros() {
-    const botones = document.querySelectorAll(".products__filters button");
-
-    botones.forEach(btn => {
-        btn.addEventListener("click", () => {
-
-            botones.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-
-            categoriaActual = btn.dataset.categoria || "all";
-
-            renderProductos();
-        });
     });
 }
 
