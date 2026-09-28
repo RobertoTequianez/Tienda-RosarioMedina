@@ -231,7 +231,63 @@ function actualizarContador() {
             etiqueta = `Abrir carrito, ${total} artículos`;
         }
         boton.setAttribute("aria-label", etiqueta);
+
+        // 🔥 Último ajuste UX (punto 7) — estado vacío discretamente
+        // neutro (ver .btn-cart--vacio en scss/_header.scss: borde más
+        // suave, ícono/contador en gris con contraste verificado). El
+        // botón NUNCA se deshabilita (no se toca boton.disabled en
+        // ningún lado): sigue siendo 100% clickeable/accesible vacío.
+        boton.classList.toggle("btn-cart--vacio", total === 0);
     }
+}
+
+/* 🔥 Último ajuste UX (puntos 9-11) — MICROANIMACIÓN DEL CARRITO AL
+   AGREGAR. Punto único que dispara el pulso visual (ver .btn-cart--pulso
+   y @keyframes carritoPulso en scss/_header.scss). Se llama EXCLUSIVAMENTE
+   desde los dos puntos del código que representan un aumento REAL de
+   cantidad por una acción del usuario (agregarAlCarrito() y sumar(), en
+   su rama de éxito) — nunca desde actualizarContador() en sí, que
+   también se ejecuta al cargar la página/restaurar localStorage/abrir o
+   cerrar el carrito/cambiar de viewport/eliminar, casos donde NO debe
+   animar.
+   Reinicio limpio (punto 11): si el usuario agrega varias veces rápido,
+   se quita la clase, se fuerza un reflow y se vuelve a agregar — así la
+   animación CSS se reinicia de verdad en vez de no notarse por ya tener
+   la clase puesta; el timeout previo se cancela para no acumular
+   timeouts ni dejar la clase pegada por una condición de carrera. */
+let microanimacionCarritoTimeoutId = null;
+
+function dispararMicroanimacionCarrito() {
+    const boton = document.querySelector(".btn-cart");
+    if (!boton) return;
+
+    // 🔥 Punto 12 (reduced motion): con preferencia de movimiento
+    // reducido, el número/estado ya se actualizó vía actualizarContador()
+    // — aquí simplemente no se agrega la clase decorativa, sin ejecutar
+    // ningún scale/transición (la regla CSS además queda guardada bajo
+    // @media (prefers-reduced-motion: no-preference) como resguardo
+    // doble, mismo patrón que el resto del proyecto).
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        return;
+    }
+
+    boton.classList.remove("btn-cart--pulso");
+    if (microanimacionCarritoTimeoutId) {
+        clearTimeout(microanimacionCarritoTimeoutId);
+        microanimacionCarritoTimeoutId = null;
+    }
+
+    // Fuerza un reflow entre quitar y volver a poner la clase: sin esto,
+    // si la animación anterior todavía no había terminado, el navegador
+    // puede no volver a disparar la animación CSS (la clase "ya estaba"
+    // en el mismo frame).
+    void boton.offsetWidth;
+
+    boton.classList.add("btn-cart--pulso");
+    microanimacionCarritoTimeoutId = setTimeout(() => {
+        boton.classList.remove("btn-cart--pulso");
+        microanimacionCarritoTimeoutId = null;
+    }, 300); // cubre el keyframe completo (~260ms) con margen de sobra
 }
 
 /* 🔥 CALCULAR TOTAL PRODUCTOS */
@@ -292,6 +348,11 @@ function agregarAlCarrito(producto, boton, cantidadAAgregar = 1) {
     guardarCarrito();
     actualizarContador();
     renderCarrito();
+    // 🔥 Último ajuste UX (punto 10): esta línea solo se alcanza cuando
+    // resultado.ok fue true, es decir, la cantidad realmente aumentó
+    // (AGREGAR desde card o desde modal) — nunca en la rama "agotado"/
+    // rechazada de arriba, que retorna antes de llegar acá.
+    dispararMicroanimacionCarrito();
 
     mostrarToast(producto.nombre, { tipo: "exito" });
     if (boton) marcarBotonComoAgregado(boton);
@@ -514,6 +575,11 @@ function sumar(id) {
     guardarCarrito();
     renderCarrito();
     actualizarContador();
+    // 🔥 Último ajuste UX (punto 10): igual que en agregarAlCarrito(),
+    // solo se llega acá cuando resultado.ok fue true — el "+" del carrito
+    // realmente aumentó la cantidad. Si ya estaba en el tope (stock/
+    // maxCompra), la función ya retornó arriba sin tocar nada de esto.
+    dispararMicroanimacionCarrito();
 }
 
 /* Cantidad mínima dentro del carrito = 1. El botón "-" nunca baja a 0:

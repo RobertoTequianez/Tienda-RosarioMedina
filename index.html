@@ -51,10 +51,40 @@
 <header class="header">
     <div class="header__container">
 
+        <!-- 🔥 Último ajuste UX (validación en dispositivo físico): el
+             botón hamburguesa se mueve de &__actions (donde convivía con
+             el carrito, a la derecha) a ser el PRIMER hijo directo de
+             .header__container — convención más familiar en mobile
+             (hamburguesa=izquierda, marca=centro, carrito=derecha; antes
+             se confundía con el carrito por estar ambos a la derecha).
+             En desktop sigue oculto (display:none, ver scss/_header.scss)
+             y al estar oculto no participa del layout ni del orden de
+             tabulación — el resto de los elementos (logo/nav/carrito)
+             quedan en el mismo orden visual Y de foco que siempre
+             tuvieron en desktop, sin ningún cambio ahí. Diseño (tamaño,
+             forma, 3 barras, transición a X, hover/active, aria-expanded/
+             aria-controls/aria-label) EXACTAMENTE igual, solo cambia de
+             posición en el DOM/layout. -->
+        <button
+            type="button"
+            class="header__menu-toggle"
+            id="menu-toggle"
+            aria-label="Abrir menú"
+            aria-expanded="false"
+            aria-controls="header-nav"
+        >
+            <span class="header__menu-bar" aria-hidden="true"></span>
+            <span class="header__menu-bar" aria-hidden="true"></span>
+            <span class="header__menu-bar" aria-hidden="true"></span>
+        </button>
+
         <!-- 🔥 Feature 06: "TIENDA ROSARIO" es navegación (lleva a
              #inicio), no una acción — por eso es <a>, no <button>/<div
              onclick>. Funciona con mouse, touch y teclado por ser un
-             anchor nativo real. -->
+             anchor nativo real.
+             🔥 Último ajuste UX: en mobile queda centrada ópticamente vía
+             CSS Grid (columnas laterales iguales, ver scss/_header.scss)
+             — en desktop no cambia nada. -->
         <a href="#inicio" class="header__logo">
             TIENDA ROSARIO
         </a>
@@ -99,17 +129,17 @@
             </ul>
         </nav>
 
+        <!-- 🔥 Feature 06: rediseño visual únicamente — el
+             comportamiento (Feature 05: apertura desktop/mobile,
+             focus trap, devolución de foco) no cambia. El contador
+             (#cart-count) sigue integrado DENTRO del mismo control
+             junto al SVG (ya lo estaba); aria-label ahora es dinámico
+             y lo actualiza js/carrito.js (actualizarContador()).
+             🔥 Último ajuste UX: &__actions ahora contiene SOLO el
+             carrito (la hamburguesa se movió al inicio de
+             .header__container, ver arriba) — en mobile queda a la
+             derecha (convención esperada), en desktop sin cambios. -->
         <div class="header__actions">
-            <!-- 🔥 Feature 06: rediseño visual únicamente — el
-                 comportamiento (Feature 05: apertura desktop/mobile,
-                 focus trap, devolución de foco) no cambia. El contador
-                 (#cart-count) sigue integrado DENTRO del mismo control
-                 junto al SVG (ya lo estaba); aria-label ahora es dinámico
-                 y lo actualiza js/carrito.js (actualizarContador()).
-                 🔥 Ajuste posterior: visualmente IDÉNTICO en desktop y
-                 mobile — solo puede cambiar de POSICIÓN dentro del header
-                 (ahora convive con el botón hamburguesa dentro de
-                 &__actions en mobile). -->
             <button class="btn-cart" aria-label="Abrir carrito, vacío">
 
   <svg xmlns="http://www.w3.org/2000/svg"
@@ -130,25 +160,6 @@
   <span id="cart-count" aria-hidden="true">0</span>
 
 </button>
-
-            <!-- 🔥 Feature 06 (ajuste): botón hamburguesa — solo visible
-                 por debajo del breakpoint elegido (ver scss/_header.scss).
-                 Botón real (no <div onclick>), aria-expanded/aria-controls
-                 sincronizados por JS (js/app.js). Ícono con 3 barras CSS
-                 simples (sin SVG externo, sin librerías) que rotan a "X"
-                 — transición respeta prefers-reduced-motion. -->
-            <button
-                type="button"
-                class="header__menu-toggle"
-                id="menu-toggle"
-                aria-label="Abrir menú"
-                aria-expanded="false"
-                aria-controls="header-nav"
-            >
-                <span class="header__menu-bar" aria-hidden="true"></span>
-                <span class="header__menu-bar" aria-hidden="true"></span>
-                <span class="header__menu-bar" aria-hidden="true"></span>
-            </button>
         </div>
 
     </div>

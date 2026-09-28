@@ -265,9 +265,12 @@ textarea:focus-visible,
      - ancho estable entre 0/1/9/10+: el contador tiene un min-width
        reservado y el texto se topa en "10+" (ver actualizarContador()
        en js/carrito.js) para que el control nunca "salte" de ancho.
-     - sin badge/círculo flotante ni animaciones (rebote/pulso/scale):
-       el contador vive en flujo normal dentro del botón, igual que ya
-       ocurría. */
+     🔥 Último ajuste UX (puntos 7-9) — el "sin animaciones" de este
+     comentario se acota: se agrega UNA microanimación breve y
+     controlada (ver .btn-cart--pulso, más abajo) SOLO cuando la
+     cantidad real aumenta por una acción del usuario — sigue sin
+     existir badge/círculo flotante superpuesto; la señal vive
+     enteramente dentro del botón. */
 }
 .header__actions .btn-cart {
   display: flex;
@@ -278,6 +281,7 @@ textarea:focus-visible,
   padding: 9px 12px;
   min-height: 40px;
   cursor: pointer;
+  color: #111;
   font-size: 13px;
   border-radius: 16px;
   transition: background 0.2s ease, border-color 0.2s ease;
@@ -286,11 +290,31 @@ textarea:focus-visible,
   width: 19px;
   height: 19px;
   flex-shrink: 0;
+  color: inherit;
+}
+.header__actions .btn-cart {
+  /* 🔥 Último ajuste UX (punto 8) — CONTADOR COMO ÚNICA SEÑAL de que
+     el carrito tiene artículos: color de acento + un fondo
+     circular/ovalado MUY sutil, sin salir del propio botón (nunca un
+     badge/punto flotante superpuesto). El ancho reservado ("10+",
+     ver actualizarContador() en js/carrito.js) se mantiene igual en
+     todos los estados (mismo padding siempre) para que el botón
+     nunca cambie de ancho entre 0/1/9/10+. */
 }
 .header__actions .btn-cart span {
+  display: inline-block;
   font-weight: 600;
   min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 10px;
   text-align: center;
+  color: rgb(67.6470588235%, 0%, 23.1932773109%);
+  background: rgba(255, 45, 117, 0.1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .header__actions .btn-cart span {
+    transition: background 0.2s ease, color 0.2s ease;
+  }
 }
 @media (hover: hover) {
   .header__actions .btn-cart:hover {
@@ -301,18 +325,64 @@ textarea:focus-visible,
 .header__actions .btn-cart:active {
   background: rgba(0, 0, 0, 0.08);
 }
-.header__actions {
-  /* 🔥 Ajuste posterior — BOTÓN HAMBURGUESA. Oculto por defecto
-     (>=600px, breakpoint elegido más abajo): en desktop/tablet ancho
-     la navegación ya va visible en línea, no hace falta.
-     Combina con el carrito (mismo alto, familia de bordes/hover) pero
-     sin ser idéntico: forma cuadrada redondeada (12px, no círculo/16px
-     como el carrito) para no competir visualmente ni confundirse con
-     él. ~44x44px de área interactiva. Ícono de 3 barras vía CSS
-     (nada de SVG externo/librerías/emoji); rota a "X" con aria-expanded
-     — transición respeta prefers-reduced-motion (más abajo). */
+.header__actions .btn-cart {
+  /* 🔥 Último ajuste UX (punto 7) — ESTADO VACÍO, discretamente
+     neutro pero SIEMPRE visible/operable (nunca disabled): borde un
+     toque más suave, ícono y contador en gris. Alpha 0.6 (no 0.45):
+     verificado numéricamente — contra el fondo blanco del botón da
+     ~5.7:1 de contraste, con margen sobre el mínimo AA (4.5:1) para
+     texto normal; 0.45 solo llegaba a ~3.4:1. */
 }
-.header__actions .header__menu-toggle {
+.header__actions .btn-cart.btn-cart--vacio {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.header__actions .btn-cart.btn-cart--vacio svg {
+  color: rgba(0, 0, 0, 0.6);
+}
+.header__actions .btn-cart.btn-cart--vacio span {
+  color: rgba(0, 0, 0, 0.6);
+  background: transparent;
+}
+.header__actions .btn-cart {
+  /* 🔥 Último ajuste UX (puntos 9-12) — MICROANIMACIÓN AL AGREGAR.
+     Aplicada por js/carrito.js (dispararMicroanimacionCarrito())
+     SOLO cuando la cantidad real del carrito aumenta por una acción
+     del usuario (AGREGAR desde card/modal, "+" del carrito) — nunca
+     al cargar la página, restaurar localStorage, abrir/cerrar el
+     carrito, cambiar de viewport, eliminar, o cuando "+"/AGREGAR es
+     rechazado por stock/límite y la cantidad NO cambia. Guardado
+     completo bajo prefers-reduced-motion:no-preference (además, el
+     JS ni siquiera agrega la clase si el sistema pide reducir
+     movimiento — doble resguardo, mismo patrón que el resto del
+     proyecto): con reduce, el número/estado se actualiza igual
+     (actualizarContador ya lo hace) pero sin ningún scale/transición
+     decorativa. ~260ms en total (dentro del rango 200-300ms pedido),
+     sin bounce/shake/desplazamiento/glow fuerte. */
+}
+@media (prefers-reduced-motion: no-preference) {
+  .header__actions .btn-cart.btn-cart--pulso {
+    background: rgba(255, 45, 117, 0.1);
+  }
+  .header__actions .btn-cart.btn-cart--pulso span {
+    animation: carritoPulso 0.26s ease;
+  }
+}
+.header {
+  /* 🔥 Último ajuste UX — BOTÓN HAMBURGUESA, ahora hijo directo de
+     &__container (antes vivía dentro de &__actions, junto al carrito).
+     Se mueve para poder ubicarlo a la izquierda en mobile (ver grid del
+     breakpoint, más abajo) mientras el carrito queda a la derecha — el
+     diseño del botón en sí (tamaño, forma, 3 barras, hover/active,
+     transición a X) NO cambia en absoluto, solo su posición en el
+     documento/layout. Oculto por defecto (>=768px, breakpoint elegido
+     más abajo): en desktop/tablet ancho la navegación ya va visible en
+     línea, no hace falta — y al estar oculto (display:none) no participa
+     del layout ni del orden de tabulación ahí. ~44x44px de área
+     interactiva. Ícono de 3 barras vía CSS (nada de SVG externo/
+     librerías/emoji); rota a "X" con aria-expanded — transición respeta
+     prefers-reduced-motion (más abajo). */
+}
+.header__menu-toggle {
   display: none;
   flex-direction: column;
   align-items: center;
@@ -327,35 +397,50 @@ textarea:focus-visible,
   cursor: pointer;
 }
 @media (hover: hover) {
-  .header__actions .header__menu-toggle:hover {
+  .header__menu-toggle:hover {
     background: rgba(0, 0, 0, 0.05);
     border-color: rgba(0, 0, 0, 0.25);
   }
 }
-.header__actions .header__menu-toggle:active {
+.header__menu-toggle:active {
   background: rgba(0, 0, 0, 0.08);
 }
-.header__actions .header__menu-bar {
+.header__menu-bar {
   width: 18px;
   height: 2px;
   background: #111;
   border-radius: 1px;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .header__actions .header__menu-bar {
+  .header__menu-bar {
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 }
-.header__actions .header__menu-toggle[aria-expanded=true] .header__menu-bar:nth-child(1) {
+.header__menu-toggle[aria-expanded=true] .header__menu-bar:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
-.header__actions .header__menu-toggle[aria-expanded=true] .header__menu-bar:nth-child(2) {
+.header__menu-toggle[aria-expanded=true] .header__menu-bar:nth-child(2) {
   opacity: 0;
 }
-.header__actions .header__menu-toggle[aria-expanded=true] .header__menu-bar:nth-child(3) {
+.header__menu-toggle[aria-expanded=true] .header__menu-bar:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
 
+/* 🔥 Último ajuste UX (punto 9) — keyframe de la microanimación del
+   contador del carrito. Fuera del selector .header porque una
+   @keyframes no anida con significado bajo un selector en Sass (se
+   compilaría igual, pero se declara a nivel de archivo por claridad). */
+@keyframes carritoPulso {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 /* 📱 Última ronda de ajustes (punto 7) — BREAKPOINT DEL HEADER, RE-MEDIDO
    ==================================================================
    El valor anterior (600px) se había medido y documentado explícitamente
@@ -379,17 +464,44 @@ textarea:focus-visible,
    revés): por debajo, header compacto + hamburguesa; desde 768px en
    adelante, navegación horizontal visible con los 4 links. */
 @media (max-width: 767px) {
+  /* 🔥 Último ajuste UX (punto 3) — CENTRADO REAL DE LA MARCA.
+     .header__container pasa de flex a CSS Grid SOLO en este breakpoint:
+     tres columnas (1fr auto 1fr). Las columnas laterales son fracciones
+     IGUALES del espacio restante, así que aunque la hamburguesa (42px) y
+     el carrito (ancho variable según el contador) tengan anchos
+     distintos, ambas columnas miden EXACTAMENTE lo mismo — el logo
+     (columna central, "auto", ancho de su propio contenido) queda
+     ópticamente centrado en el viewport de verdad, no solo "entre sus
+     vecinos inmediatos" como pasaría con justify-content:space-between
+     si los extremos no pesan igual. */
   .header__container {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     padding: 10px 15px;
+  }
+  .header__menu-toggle {
+    grid-column: 1;
+    justify-self: start;
   }
   /* 🔥 Ajuste posterior — LOGO MOBILE: "TIENDA ROSARIO" debe quedar en
      una sola línea (antes max-width:90px + line-height:1.2 permitía
      2 líneas). Con la navegación ya fuera de esta fila (ahora es un
      menú desplegable, ver más abajo) sobra espacio para el logo
-     completo sin comprimirlo en exceso. */
+     completo sin comprimirlo en exceso.
+     🔥 Último ajuste UX: grid-column:2 + justify-self:center la ubica en
+     la columna central del grid de arriba — queda centrada como caja
+     completa (ancho "auto" = el de su propio contenido), sin necesitar
+     text-align. */
   .header__logo {
+    grid-column: 2;
+    justify-self: center;
     font-size: 13px;
     white-space: nowrap;
+  }
+  .header__actions {
+    grid-column: 3;
+    justify-self: end;
   }
   /* 🔥 Ajuste posterior — NAVEGACIÓN: ya NO se muestra en la fila
      principal en mobile. El mismo <nav>/<ul> (ver index.html) pasa a
@@ -431,6 +543,21 @@ textarea:focus-visible,
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     border-left: 3px solid transparent;
     font-size: 15px;
+    /* 🔥 Ajuste puntual posterior — el subrayado ::after (definido arriba,
+       compartido con desktop, punto 78 de este archivo) se sentía
+       redundante en el menú vertical mobile, sumado al indicador lateral +
+       fondo + color de texto que ya indican la selección aquí. Se
+       desactiva SOLO visualmente y SOLO dentro de este breakpoint mobile
+       (display:none en vez de tocar la regla compartida): el
+       pseudo-elemento sigue existiendo en el DOM/CSS para desktop, nunca
+       se elimina globalmente. display:none anula el subrayado en TODOS
+       los estados que lo activan (hover, focus-visible, .is-active) de
+       una sola vez, sin tener que repetir la anulación en cada uno. */
+  }
+  .header__nav .nav__link::after {
+    display: none;
+  }
+  .header__nav .nav__link {
     /* 🔥 Última ronda de ajustes (punto 3) — FEEDBACK TÁCTIL INMEDIATO.
        :active es la señal más directa e inmediata que existe para touch
        (se aplica en cuanto el dedo toca, sin esperar ningún JS ni
@@ -473,9 +600,6 @@ textarea:focus-visible,
   .nav__list li:last-child .nav__link {
     border-bottom: none;
   }
-  .header__actions {
-    flex-shrink: 0;
-  }
   .header__actions .btn-cart {
     font-size: 11px;
     padding: 6px 10px;
@@ -489,7 +613,7 @@ textarea:focus-visible,
   .header__actions .btn-cart span {
     min-width: 20px;
   }
-  .header__actions .header__menu-toggle {
+  .header__menu-toggle {
     display: flex;
   }
 }
