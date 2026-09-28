@@ -184,6 +184,20 @@ textarea:focus-visible,
   letter-spacing: 0.5px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* 🔥 Ajuste visual puntual (post-candidato final): "Comprar ahora" y
+     "Ver todos los productos" son <a> reales (navegación), así que
+     heredan el subrayado por defecto del user-agent para enlaces — nada
+     en el sitio lo agregaba a propósito. La forma píldora/fondo negro ya
+     comunica que es interactivo, así que el underline sobra aquí. Se
+     resuelve en ESTE mixin base (no en una regla nueva/duplicada): lo
+     heredan ambas variantes (primaria y outline), y como no hay ninguna
+     regla en :hover/:active/:visited que reintroduzca el underline en
+     otro punto del sitio, esta única declaración ya cubre los 5 estados
+     pedidos (normal/hover/active/visited/focus-visible). Nunca toca la
+     regla `a` global ni el underline del header (ver scss/_header.scss)
+     ni el de breadcrumbs (ver scss/_catalogo.scss): solo alcanza a los
+     elementos que explícitamente incluyen este mixin. */
+  text-decoration: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .btn-primary {
@@ -901,6 +915,20 @@ textarea:focus-visible,
   letter-spacing: 0.5px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* 🔥 Ajuste visual puntual (post-candidato final): "Comprar ahora" y
+     "Ver todos los productos" son <a> reales (navegación), así que
+     heredan el subrayado por defecto del user-agent para enlaces — nada
+     en el sitio lo agregaba a propósito. La forma píldora/fondo negro ya
+     comunica que es interactivo, así que el underline sobra aquí. Se
+     resuelve en ESTE mixin base (no en una regla nueva/duplicada): lo
+     heredan ambas variantes (primaria y outline), y como no hay ninguna
+     regla en :hover/:active/:visited que reintroduzca el underline en
+     otro punto del sitio, esta única declaración ya cubre los 5 estados
+     pedidos (normal/hover/active/visited/focus-visible). Nunca toca la
+     regla `a` global ni el underline del header (ver scss/_header.scss)
+     ni el de breadcrumbs (ver scss/_catalogo.scss): solo alcanza a los
+     elementos que explícitamente incluyen este mixin. */
+  text-decoration: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .product-card__btn {
@@ -1211,6 +1239,20 @@ textarea:focus-visible,
   letter-spacing: 0.5px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* 🔥 Ajuste visual puntual (post-candidato final): "Comprar ahora" y
+     "Ver todos los productos" son <a> reales (navegación), así que
+     heredan el subrayado por defecto del user-agent para enlaces — nada
+     en el sitio lo agregaba a propósito. La forma píldora/fondo negro ya
+     comunica que es interactivo, así que el underline sobra aquí. Se
+     resuelve en ESTE mixin base (no en una regla nueva/duplicada): lo
+     heredan ambas variantes (primaria y outline), y como no hay ninguna
+     regla en :hover/:active/:visited que reintroduzca el underline en
+     otro punto del sitio, esta única declaración ya cubre los 5 estados
+     pedidos (normal/hover/active/visited/focus-visible). Nunca toca la
+     regla `a` global ni el underline del header (ver scss/_header.scss)
+     ni el de breadcrumbs (ver scss/_catalogo.scss): solo alcanza a los
+     elementos que explícitamente incluyen este mixin. */
+  text-decoration: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .catalogo__filtros-toggle {
@@ -1343,6 +1385,20 @@ textarea:focus-visible,
   letter-spacing: 0.5px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* 🔥 Ajuste visual puntual (post-candidato final): "Comprar ahora" y
+     "Ver todos los productos" son <a> reales (navegación), así que
+     heredan el subrayado por defecto del user-agent para enlaces — nada
+     en el sitio lo agregaba a propósito. La forma píldora/fondo negro ya
+     comunica que es interactivo, así que el underline sobra aquí. Se
+     resuelve en ESTE mixin base (no en una regla nueva/duplicada): lo
+     heredan ambas variantes (primaria y outline), y como no hay ninguna
+     regla en :hover/:active/:visited que reintroduzca el underline en
+     otro punto del sitio, esta única declaración ya cubre los 5 estados
+     pedidos (normal/hover/active/visited/focus-visible). Nunca toca la
+     regla `a` global ni el underline del header (ver scss/_header.scss)
+     ni el de breadcrumbs (ver scss/_catalogo.scss): solo alcanza a los
+     elementos que explícitamente incluyen este mixin. */
+  text-decoration: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .catalogo__filtros-aplicar {
@@ -1637,6 +1693,20 @@ textarea:focus-visible,
   letter-spacing: 0.5px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* 🔥 Ajuste visual puntual (post-candidato final): "Comprar ahora" y
+     "Ver todos los productos" son <a> reales (navegación), así que
+     heredan el subrayado por defecto del user-agent para enlaces — nada
+     en el sitio lo agregaba a propósito. La forma píldora/fondo negro ya
+     comunica que es interactivo, así que el underline sobra aquí. Se
+     resuelve en ESTE mixin base (no en una regla nueva/duplicada): lo
+     heredan ambas variantes (primaria y outline), y como no hay ninguna
+     regla en :hover/:active/:visited que reintroduzca el underline en
+     otro punto del sitio, esta única declaración ya cubre los 5 estados
+     pedidos (normal/hover/active/visited/focus-visible). Nunca toca la
+     regla `a` global ni el underline del header (ver scss/_header.scss)
+     ni el de breadcrumbs (ver scss/_catalogo.scss): solo alcanza a los
+     elementos que explícitamente incluyen este mixin. */
+  text-decoration: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .catalogo__limpiar {
